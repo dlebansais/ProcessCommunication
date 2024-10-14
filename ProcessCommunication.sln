@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.11.35222.181
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProcessCommunication", "ProcessCommunication\ProcessCommunication.csproj", "{8E4CC648-5B9A-46F7-A43C-E0B3B3D4162A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8E4CC648-5B9A-46F7-A43C-E0B3B3D4162A}.Debug|x64.ActiveCfg = Debug|x64
+		{8E4CC648-5B9A-46F7-A43C-E0B3B3D4162A}.Debug|x64.Build.0 = Debug|x64
+		{8E4CC648-5B9A-46F7-A43C-E0B3B3D4162A}.Release|x64.ActiveCfg = Release|x64
+		{8E4CC648-5B9A-46F7-A43C-E0B3B3D4162A}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {647DAEE4-8305-480F-8B98-B86D5269C3AC}
+	EndGlobalSection
+EndGlobal
