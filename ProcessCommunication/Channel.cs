@@ -3,6 +3,7 @@
 using System;
 using System.Diagnostics;
 using System.IO.MemoryMappedFiles;
+using Contracts;
 
 /// <summary>
 /// Represents a communication channel.
@@ -32,36 +33,34 @@ public class Channel(Guid guid, Mode mode) : IDisposable
     public Mode Mode { get; } = mode;
 
     /// <summary>
-    /// Opens the chanel.
+    /// Opens the channel.
     /// </summary>
     public void Open()
     {
         if (IsOpen)
             throw new InvalidOperationException();
 
+        Contract.Assert(Accessor is null);
+        Contract.Assert(File is null);
+
         try
         {
             int CapacityWithHeadTail = Capacity + (sizeof(int) * 2);
             string ChannelName = Guid.ToString("B");
 
-            Accessor?.Dispose();
-            File?.Dispose();
-
-            File = Mode switch
+            MemoryMappedFile NewFile = Mode switch
             {
                 Mode.Receive => MemoryMappedFile.CreateNew(ChannelName, CapacityWithHeadTail, MemoryMappedFileAccess.ReadWrite),
                 Mode.Send or _ => MemoryMappedFile.OpenExisting(ChannelName, MemoryMappedFileRights.ReadWrite),
             };
 
-            Accessor = File.CreateViewAccessor();
+            MemoryMappedViewAccessor NewAccessor = NewFile.CreateViewAccessor();
+
+            SetFileAndAccessor(NewFile, NewAccessor);
         }
         catch (Exception exception)
         {
-            Accessor?.Dispose();
-            File?.Dispose();
-
             LastError = exception.Message;
-            Close();
         }
     }
 
@@ -234,21 +233,16 @@ public class Channel(Guid guid, Mode mode) : IDisposable
     /// </summary>
     public void Close()
     {
-        if (Accessor is not null)
-        {
-            using (MemoryMappedViewAccessor DisposedAccessor = Accessor)
-            {
-                Accessor = null;
-            }
-        }
+        SetFileAndAccessor(null, null);
+    }
 
-        if (File is not null)
-        {
-            using (MemoryMappedFile DisposedFile = File)
-            {
-                File = null;
-            }
-        }
+    private void SetFileAndAccessor(MemoryMappedFile? file, MemoryMappedViewAccessor? accessor)
+    {
+        Accessor?.Dispose();
+        File?.Dispose();
+
+        File = file;
+        Accessor = accessor;
     }
 
     private MemoryMappedFile? File;
