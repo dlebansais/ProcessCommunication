@@ -191,7 +191,7 @@ public class Channel(Guid guid, Mode mode) : IDisposable
         }
         else
         {
-            if (Length > EndOfBuffer - Tail + Head)
+            if (Length > EndOfBuffer - Head + Tail - 1)
                 throw new InvalidOperationException();
 
             int FirstCopyLength = Math.Min(EndOfBuffer - Head, Length);
