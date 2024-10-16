@@ -1,12 +1,15 @@
 ﻿namespace ProcessCommunication;
 
 using System;
+using System.Diagnostics;
 using System.IO.MemoryMappedFiles;
 
 /// <summary>
 /// Represents a communication channel.
 /// </summary>
-public class Channel : IDisposable
+/// <param name="guid">The channel guid.</param>
+/// <param name="mode">The caller channel mode.</param>
+public class Channel(Guid guid, Mode mode) : IDisposable
 {
     /// <summary>
     /// Gets a shared guid from client to server.
@@ -19,25 +22,14 @@ public class Channel : IDisposable
     public static int Capacity { get; set; } = 0x100000;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="Channel"/> class.
-    /// </summary>
-    /// <param name="guid">The channel guid.</param>
-    /// <param name="mode">The caller channel mode.</param>
-    public Channel(Guid guid, Mode mode)
-    {
-        Guid = guid;
-        Mode = mode;
-    }
-
-    /// <summary>
     /// Gets the channel guid.
     /// </summary>
-    public Guid Guid { get; }
+    public Guid Guid { get; } = guid;
 
     /// <summary>
     /// Gets the caller channel mode.
     /// </summary>
-    public Mode Mode { get; }
+    public Mode Mode { get; } = mode;
 
     /// <summary>
     /// Opens the chanel.
@@ -52,21 +44,22 @@ public class Channel : IDisposable
             int CapacityWithHeadTail = Capacity + (sizeof(int) * 2);
             string ChannelName = Guid.ToString("B");
 
-            switch (Mode)
+            Accessor?.Dispose();
+            File?.Dispose();
+
+            File = Mode switch
             {
-                default:
-                case Mode.Send:
-                    File = MemoryMappedFile.OpenExisting(ChannelName, MemoryMappedFileRights.ReadWrite);
-                    break;
-                case Mode.Receive:
-                    File = MemoryMappedFile.CreateNew(ChannelName, CapacityWithHeadTail, MemoryMappedFileAccess.ReadWrite);
-                    break;
-            }
+                Mode.Receive => MemoryMappedFile.CreateNew(ChannelName, CapacityWithHeadTail, MemoryMappedFileAccess.ReadWrite),
+                Mode.Send or _ => MemoryMappedFile.OpenExisting(ChannelName, MemoryMappedFileRights.ReadWrite),
+            };
 
             Accessor = File.CreateViewAccessor();
         }
         catch (Exception exception)
         {
+            Accessor?.Dispose();
+            File?.Dispose();
+
             LastError = exception.Message;
             Close();
         }
@@ -75,34 +68,12 @@ public class Channel : IDisposable
     /// <summary>
     /// Gets a value indicating whether the channel is open.
     /// </summary>
-    public bool IsOpen { get => File is not null && Accessor is not null; }
+    public bool IsOpen { get => Accessor is not null; }
 
     /// <summary>
     /// Gets the last error.
     /// </summary>
     public string LastError { get; private set; } = string.Empty;
-
-    /// <summary>
-    /// Closes the chanel.
-    /// </summary>
-    public void Close()
-    {
-        if (Accessor is not null)
-        {
-            using (MemoryMappedViewAccessor DisposedAccessor = Accessor)
-            {
-                Accessor = null;
-            }
-        }
-
-        if (File is not null)
-        {
-            using (MemoryMappedFile DisposedFile = File)
-            {
-                File = null;
-            }
-        }
-    }
 
     /// <summary>
     /// Reads data from the channel.
@@ -123,14 +94,16 @@ public class Channel : IDisposable
         {
             int Length = Head - Tail;
             Result = new byte[Length];
-            Accessor.ReadArray(Tail, Result, 0, Length);
+            int Read = Accessor.ReadArray(Tail, Result, 0, Length);
+            Debug.Assert(Read == Length);
         }
         else if (Head < Tail)
         {
             int Length = EndOfBuffer - Tail + Head;
             Result = new byte[Length];
-            Accessor.ReadArray(Tail, Result, 0, EndOfBuffer - Tail);
-            Accessor.ReadArray(0, Result, EndOfBuffer - Tail, Head);
+            int Read = Accessor.ReadArray(Tail, Result, 0, EndOfBuffer - Tail);
+            Read += Accessor.ReadArray(0, Result, EndOfBuffer - Tail, Head);
+            Debug.Assert(Read == Length);
         }
         else
             return null;
@@ -194,6 +167,13 @@ public class Channel : IDisposable
     /// <exception cref="InvalidOperationException">The channel is not open.</exception>
     public void Write(byte[] data)
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(data);
+#else
+        if (data is null)
+            throw new ArgumentNullException(nameof(data));
+#endif
+
         if (Accessor is null)
             throw new InvalidOperationException();
 
@@ -249,12 +229,53 @@ public class Channel : IDisposable
         return $"{channelName} - Head:{Head} Tail:{Tail} Capacity:{Capacity} Free:{FreeLength} Used:{UsedLength}";
     }
 
-    /// <inheritdoc/>
-    public void Dispose()
+    /// <summary>
+    /// Closes the chanel.
+    /// </summary>
+    public void Close()
     {
-        Close();
+        if (Accessor is not null)
+        {
+            using (MemoryMappedViewAccessor DisposedAccessor = Accessor)
+            {
+                Accessor = null;
+            }
+        }
+
+        if (File is not null)
+        {
+            using (MemoryMappedFile DisposedFile = File)
+            {
+                File = null;
+            }
+        }
     }
 
     private MemoryMappedFile? File;
     private MemoryMappedViewAccessor? Accessor;
+    private bool disposedValue;
+
+    /// <summary>
+    /// Optiuonally disposes of the instance.
+    /// </summary>
+    /// <param name="disposing">True if disposing must be done.</param>
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!disposedValue)
+        {
+            if (disposing)
+            {
+                Close();
+            }
+
+            disposedValue = true;
+        }
+    }
+
+    /// <inheritdoc/>
+    public void Dispose()
+    {
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
+    }
 }

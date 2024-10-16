@@ -32,6 +32,13 @@ public static class Converter
     /// <param name="text">The decoded string.</param>
     public static bool TryDecodeString(byte[] data, ref int offset, out string text)
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(data);
+#else
+        if (data is null)
+            throw new ArgumentNullException(nameof(data));
+#endif
+
         if (offset + sizeof(int) <= data.Length)
         {
             int DecodedStringLength = BitConverter.ToInt32(data, offset);

@@ -5,6 +5,8 @@ VisualStudioVersion = 17.11.35222.181
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProcessCommunication", "ProcessCommunication\ProcessCommunication.csproj", "{8E4CC648-5B9A-46F7-A43C-E0B3B3D4162A}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProcessCommunication.Test", "Test\ProcessCommunication.Test\ProcessCommunication.Test.csproj", "{506C915C-5BE3-4ACE-9236-4CEB8D60FF28}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -15,6 +17,10 @@ Global
 		{8E4CC648-5B9A-46F7-A43C-E0B3B3D4162A}.Debug|x64.Build.0 = Debug|x64
 		{8E4CC648-5B9A-46F7-A43C-E0B3B3D4162A}.Release|x64.ActiveCfg = Release|x64
 		{8E4CC648-5B9A-46F7-A43C-E0B3B3D4162A}.Release|x64.Build.0 = Release|x64
+		{506C915C-5BE3-4ACE-9236-4CEB8D60FF28}.Debug|x64.ActiveCfg = Debug|x64
+		{506C915C-5BE3-4ACE-9236-4CEB8D60FF28}.Debug|x64.Build.0 = Debug|x64
+		{506C915C-5BE3-4ACE-9236-4CEB8D60FF28}.Release|x64.ActiveCfg = Release|x64
+		{506C915C-5BE3-4ACE-9236-4CEB8D60FF28}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
