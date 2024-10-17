@@ -48,4 +48,20 @@ public class TestConverter
 
         Assert.That(Success, Is.False);
     }
+
+    [Test]
+    public void TestDecodeInvalidData()
+    {
+        const string TestString = "test";
+
+        byte[] Encoded = Converter.EncodeString(TestString);
+
+        for (int i = 0; i < Encoded.Length; i++)
+            Encoded[i] = 0;
+
+        int Offset = 0;
+        bool Success = Converter.TryDecodeString(Encoded, ref Offset, out _);
+
+        Assert.That(Success, Is.False);
+    }
 }
