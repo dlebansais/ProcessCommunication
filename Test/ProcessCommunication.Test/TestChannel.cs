@@ -1,6 +1,4 @@
-﻿#pragma warning disable CA1848 // Use the LoggerMessage delegates
-
-namespace ProcessCommunication.Test;
+﻿namespace ProcessCommunication.Test;
 
 using System;
 using NUnit.Framework;

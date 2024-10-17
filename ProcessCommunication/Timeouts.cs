@@ -8,22 +8,22 @@ using System;
 public static class Timeouts
 {
     /// <summary>
-    /// The timeout waiting for the verifier process to be started.
+    /// The timeout waiting for the process to be started.
     /// </summary>
-    public static readonly TimeSpan VerifierProcessLaunchTimeout = TimeSpan.FromSeconds(5);
+    public static readonly TimeSpan ProcessLaunchTimeout = TimeSpan.FromSeconds(5);
 
     /// <summary>
     /// The timeout waiting for channels to no longer be busy.
     /// </summary>
-    public static readonly TimeSpan VerificationBusyTimeout = TimeSpan.FromSeconds(5);
+    public static readonly TimeSpan BusyTimeout = TimeSpan.FromSeconds(5);
 
     /// <summary>
-    /// The timeout waiting for verification acknowledge. TODO: add an ack when there is no more incoming results, otherwise we always wait for the timeout even in case of success.
+    /// The timeout waiting for acknowledge.
     /// </summary>
-    public static readonly TimeSpan VerificationAcknowledgeTimeout = TimeSpan.FromSeconds(10);
+    public static readonly TimeSpan AcknowledgeTimeout = TimeSpan.FromSeconds(10);
 
     /// <summary>
-    /// The timeout waiting for new data to verify.
+    /// The timeout waiting for new data.
     /// </summary>
-    public static readonly TimeSpan VerificationIdleTimeout = TimeSpan.FromSeconds(60);
+    public static readonly TimeSpan IdleTimeout = TimeSpan.FromSeconds(60);
 }
