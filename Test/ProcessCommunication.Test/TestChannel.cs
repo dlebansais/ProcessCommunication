@@ -6,7 +6,7 @@ using NUnit.Framework;
 [TestFixture]
 public class TestChannel
 {
-    private static readonly Guid TestGuid = new("20E9C969-C990-4DEB-984F-979C824DCC18");
+    internal static readonly Guid TestGuid = new("20E9C969-C990-4DEB-984F-979C824DCC18");
 
     [Test]
     public void TestSuccess()

@@ -39,6 +39,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\..\ProcessCommunication\ProcessCommunication.csproj" />
+        <ProjectReference Include="..\TestProcess\TestProcess.csproj" />
     </ItemGroup>
 
 </Project>
