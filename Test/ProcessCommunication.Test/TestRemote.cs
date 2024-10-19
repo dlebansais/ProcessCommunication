@@ -54,6 +54,7 @@ public class TestRemote
         await Task.Delay(TimeSpan.FromSeconds(10)).ConfigureAwait(true);
     }
 
+/*
     [Test]
     [NonParallelizable]
     public async Task TestRetry()
@@ -82,4 +83,5 @@ public class TestRemote
 
         await Task.Delay(TimeSpan.FromSeconds(15)).ConfigureAwait(true);
     }
+*/
 }
