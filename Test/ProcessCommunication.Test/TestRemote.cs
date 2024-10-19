@@ -10,7 +10,7 @@ public class TestRemote
 {
     [Test]
     [NonParallelizable]
-    public async Task TestSuccess()
+    public async Task TestRemoteSuccess()
     {
         Remote.Reset();
 

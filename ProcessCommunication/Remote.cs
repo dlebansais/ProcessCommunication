@@ -1,6 +1,4 @@
-﻿#pragma warning disable CA1303
-
-namespace ProcessCommunication;
+﻿namespace ProcessCommunication;
 
 using System;
 using System.Diagnostics;
@@ -46,11 +44,9 @@ public static class Remote
                 ProcessStartInfo.UseShellExecute = false;
                 ProcessStartInfo.WorkingDirectory = Path.GetDirectoryName(pathToProcess);
                 SetProcess(Process.Start(ProcessStartInfo));
-                Console.WriteLine("0.1");
             }
             catch
             {
-                Console.WriteLine("0.2");
             }
         }
 
@@ -60,18 +56,12 @@ public static class Remote
         CreatedChannel = Contract.AssertNotNull(CreatedChannel);
 
         if (!CreatedChannel.IsOpen && CreationStopwatch.Elapsed >= Timeouts.ProcessLaunchTimeout)
-        {
-            Console.WriteLine("1");
             return null;
-        }
 
         CreatedChannel.Open();
 
         if (!CreatedChannel.IsOpen)
-        {
-            Console.WriteLine("2");
             return null;
-        }
 
         return CreatedChannel;
     }
