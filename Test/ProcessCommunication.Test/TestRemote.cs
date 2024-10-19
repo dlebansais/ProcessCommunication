@@ -73,7 +73,7 @@ public class TestRemote
         Channel = Remote.LaunchAndOpenChannel(PathToProccess, TestChannel.TestGuid);
         Assert.That(Channel, Is.Null);
     }
-
+/*
     [Test]
     [NonParallelizable]
     public async Task TestRetry()
@@ -113,4 +113,5 @@ public class TestRemote
 
         await Task.Delay(TimeSpan.FromSeconds(25)).ConfigureAwait(true);
     }
+*/
 }

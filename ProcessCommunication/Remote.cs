@@ -51,7 +51,8 @@ public static class Remote
                 ProcessStartInfo.FileName = pathToProcess;
                 ProcessStartInfo.UseShellExecute = false;
                 ProcessStartInfo.WorkingDirectory = Path.GetDirectoryName(pathToProcess);
-                SetProcess(Process.Start(ProcessStartInfo));
+
+                using Process? CreatedProcess = Process.Start(ProcessStartInfo);
 
                 Info1 = "Launched";
             }
@@ -89,18 +90,11 @@ public static class Remote
     public static void Reset()
     {
         CreationStopwatch.Reset();
-        SetProcess(null);
         SetChannel(null);
         Info1 = null;
         Info2 = null;
         Info3 = null;
         Info4 = null;
-    }
-
-    private static void SetProcess(Process? process)
-    {
-        CreatedProcess?.Dispose();
-        CreatedProcess = process;
     }
 
     private static void SetChannel(Channel? channel)
@@ -110,6 +104,5 @@ public static class Remote
     }
 
     private static readonly Stopwatch CreationStopwatch = new();
-    private static Process? CreatedProcess;
     private static Channel? CreatedChannel;
 }
