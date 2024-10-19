@@ -1,7 +1,4 @@
-﻿#pragma warning disable CS1591
-#pragma warning disable SA1600
-
-namespace ProcessCommunication;
+﻿namespace ProcessCommunication;
 
 using System;
 using System.Diagnostics;
@@ -14,11 +11,6 @@ using Contracts;
 /// </summary>
 public static class Remote
 {
-    public static string? Info1 { get; private set; }
-    public static string? Info2 { get; private set; }
-    public static string? Info3 { get; private set; }
-    public static string? Info4 { get; private set; }
-
     /// <summary>
     /// Gets the full path to a file in the same directory as the calling assembly.
     /// </summary>
@@ -53,12 +45,9 @@ public static class Remote
                 ProcessStartInfo.WorkingDirectory = Path.GetDirectoryName(pathToProcess);
 
                 using Process? CreatedProcess = Process.Start(ProcessStartInfo);
-
-                Info1 = "Launched";
             }
             catch
             {
-                Info2 = "Exception";
             }
         }
 
@@ -68,18 +57,12 @@ public static class Remote
         CreatedChannel = Contract.AssertNotNull(CreatedChannel);
 
         if (!CreatedChannel.IsOpen && CreationStopwatch.Elapsed >= Timeouts.ProcessLaunchTimeout)
-        {
-            Info3 = "Too late";
             return null;
-        }
 
         CreatedChannel.Open();
 
         if (!CreatedChannel.IsOpen)
-        {
-            Info4 = "Not open";
             return null;
-        }
 
         return CreatedChannel;
     }
@@ -91,10 +74,6 @@ public static class Remote
     {
         CreationStopwatch.Reset();
         SetChannel(null);
-        Info1 = null;
-        Info2 = null;
-        Info3 = null;
-        Info4 = null;
     }
 
     private static void SetChannel(Channel? channel)
