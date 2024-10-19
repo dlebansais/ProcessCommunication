@@ -26,7 +26,7 @@ public static class Remote
     /// <summary>
     /// Launches a process and open a channel in send mode.
     /// Because launching a process can take time, callers should retry repeatedly until success.
-    /// After <see cref="Timeouts.ProcessLaunchTimeout"/> has elapsed this method will permanently fail until <see cref="Reset"/> is called.
+    /// After <see cref="Timeouts.ProcessLaunchTimeout"/> has elapsed this method will always return the same result until <see cref="Reset"/> is called.
     /// </summary>
     /// <param name="pathToProcess">The process to launch.</param>
     /// <param name="guid">The channel guid.</param>
@@ -56,10 +56,8 @@ public static class Remote
 
         CreatedChannel = Contract.AssertNotNull(CreatedChannel);
 
-        if (!CreatedChannel.IsOpen && CreationStopwatch.Elapsed >= Timeouts.ProcessLaunchTimeout)
-            return null;
-
-        CreatedChannel.Open();
+        if (CreationStopwatch.Elapsed < Timeouts.ProcessLaunchTimeout)
+            CreatedChannel.Open();
 
         if (!CreatedChannel.IsOpen)
             return null;
