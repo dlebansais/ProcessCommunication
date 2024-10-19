@@ -18,7 +18,7 @@ internal class Program
             return;
 
         Stopwatch Stopwatch = Stopwatch.StartNew();
-        TimeSpan Timeout = TimeSpan.FromSeconds(10);
+        TimeSpan Timeout = TimeSpan.FromSeconds(20);
 
         while (Stopwatch.Elapsed < Timeout)
         {

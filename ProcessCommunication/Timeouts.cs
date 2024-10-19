@@ -10,7 +10,7 @@ public static class Timeouts
     /// <summary>
     /// The default timeout waiting for the process to be started.
     /// </summary>
-    internal static readonly TimeSpan DefaultProcessLaunchTimeout = TimeSpan.FromSeconds(5);
+    internal static readonly TimeSpan DefaultProcessLaunchTimeout = TimeSpan.FromSeconds(10);
 
     /// <summary>
     /// Gets or sets the timeout waiting for the process to be started.

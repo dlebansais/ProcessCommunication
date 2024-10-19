@@ -26,7 +26,21 @@ public class TestRemote
         Assert.That(Remote.Info4, Is.EqualTo("Not open"));
         Assert.That(Channel, Is.Null);
 
-        await Task.Delay(TimeSpan.FromSeconds(4.0 - TestStopwatch.Elapsed.TotalSeconds)).ConfigureAwait(true);
+        await Task.Delay(TimeSpan.FromSeconds(5.0 - TestStopwatch.Elapsed.TotalSeconds)).ConfigureAwait(true);
+
+        var Processes = Process.GetProcesses();
+        foreach (var process in Processes)
+        {
+            try
+            {
+                Console.WriteLine($"{process.Id} - {process?.MainModule?.FileName}");
+            }
+            catch
+            {
+            }
+        }
+
+        await Task.Delay(TimeSpan.FromSeconds(9.0 - TestStopwatch.Elapsed.TotalSeconds)).ConfigureAwait(true);
 
         Channel = Remote.LaunchAndOpenChannel(PathToProccess, TestChannel.TestGuid);
         Assert.That(Remote.Info1, Is.EqualTo("Launched"));
@@ -37,7 +51,7 @@ public class TestRemote
 
         Channel.Dispose();
 
-        await Task.Delay(TimeSpan.FromSeconds(15)).ConfigureAwait(true);
+        await Task.Delay(TimeSpan.FromSeconds(25)).ConfigureAwait(true);
     }
 
     [Test]
@@ -54,12 +68,10 @@ public class TestRemote
         Channel = Remote.LaunchAndOpenChannel(PathToProccess, TestChannel.TestGuid);
         Assert.That(Channel, Is.Null);
 
-        await Task.Delay(TimeSpan.FromSeconds(4.0 - TestStopwatch.Elapsed.TotalSeconds)).ConfigureAwait(true);
+        await Task.Delay(TimeSpan.FromSeconds(9.0 - TestStopwatch.Elapsed.TotalSeconds)).ConfigureAwait(true);
 
         Channel = Remote.LaunchAndOpenChannel(PathToProccess, TestChannel.TestGuid);
         Assert.That(Channel, Is.Null);
-
-        await Task.Delay(TimeSpan.FromSeconds(10)).ConfigureAwait(true);
     }
 
     [Test]
@@ -80,7 +92,7 @@ public class TestRemote
         Assert.That(Remote.Info4, Is.EqualTo("Not open"));
         Assert.That(Channel, Is.Null);
 
-        await Task.Delay(TimeSpan.FromSeconds(6.0 - TestStopwatch.Elapsed.TotalSeconds)).ConfigureAwait(true);
+        await Task.Delay(TimeSpan.FromSeconds(11.0 - TestStopwatch.Elapsed.TotalSeconds)).ConfigureAwait(true);
 
         Channel = Remote.LaunchAndOpenChannel(PathToProccess, TestChannel.TestGuid);
         Assert.That(Remote.Info1, Is.EqualTo("Launched"));
@@ -99,6 +111,6 @@ public class TestRemote
 
         Channel.Dispose();
 
-        await Task.Delay(TimeSpan.FromSeconds(15)).ConfigureAwait(true);
+        await Task.Delay(TimeSpan.FromSeconds(25)).ConfigureAwait(true);
     }
 }
