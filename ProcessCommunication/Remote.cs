@@ -30,8 +30,9 @@ public static class Remote
     /// </summary>
     /// <param name="pathToProcess">The process to launch.</param>
     /// <param name="guid">The channel guid.</param>
+    /// <param name="arguments">Optional arguments.</param>
     /// <returns>The channel if successul; otherwise, <see langword="null"/>.</returns>
-    public static Channel? LaunchAndOpenChannel(string pathToProcess, Guid guid)
+    public static Channel? LaunchAndOpenChannel(string pathToProcess, Guid guid, string? arguments = null)
     {
         if (!CreationStopwatch.IsRunning)
         {
@@ -41,6 +42,7 @@ public static class Remote
             {
                 ProcessStartInfo ProcessStartInfo = new();
                 ProcessStartInfo.FileName = pathToProcess;
+                ProcessStartInfo.Arguments = arguments;
                 ProcessStartInfo.UseShellExecute = false;
                 ProcessStartInfo.WorkingDirectory = Path.GetDirectoryName(pathToProcess);
 

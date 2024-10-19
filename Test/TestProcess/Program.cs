@@ -17,8 +17,12 @@ internal class Program
         if (!Channel.IsOpen)
             return;
 
+        int MaxDuration = 1;
+        if (args.Length > 0 && int.TryParse(args[0], out int ArgMaxDuration))
+            MaxDuration = ArgMaxDuration;
+
         Stopwatch Stopwatch = Stopwatch.StartNew();
-        TimeSpan Timeout = TimeSpan.FromSeconds(20);
+        TimeSpan Timeout = TimeSpan.FromSeconds(MaxDuration);
 
         while (Stopwatch.Elapsed < Timeout)
         {

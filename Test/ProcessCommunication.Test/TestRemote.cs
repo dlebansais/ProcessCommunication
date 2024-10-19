@@ -40,7 +40,7 @@ public class TestRemote
 
         Stopwatch TestStopwatch = Stopwatch.StartNew();
 
-        Channel = Remote.LaunchAndOpenChannel(PathToProccess, TestChannel.TestGuid);
+        Channel = Remote.LaunchAndOpenChannel(PathToProccess, TestChannel.TestGuid, "20");
         Assert.That(Channel, Is.Null);
 
         await Task.Delay(TimeSpan.FromSeconds(9.0 - TestStopwatch.Elapsed.TotalSeconds)).ConfigureAwait(true);
@@ -64,7 +64,7 @@ public class TestRemote
 
         Stopwatch TestStopwatch = Stopwatch.StartNew();
 
-        Channel = Remote.LaunchAndOpenChannel(PathToProccess, TestChannel.TestGuid);
+        Channel = Remote.LaunchAndOpenChannel(PathToProccess, TestChannel.TestGuid, "20");
         Assert.That(Channel, Is.Null);
 
         await Task.Delay(TimeSpan.FromSeconds(11.0 - TestStopwatch.Elapsed.TotalSeconds)).ConfigureAwait(true);
@@ -74,7 +74,7 @@ public class TestRemote
 
         Remote.Reset();
 
-        Channel = Remote.LaunchAndOpenChannel(PathToProccess, TestChannel.TestGuid);
+        Channel = Remote.LaunchAndOpenChannel(PathToProccess, TestChannel.TestGuid, "20");
         Assert.That(Channel, Is.Not.Null);
 
         Channel.Dispose();
