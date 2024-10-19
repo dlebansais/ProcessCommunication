@@ -15,7 +15,7 @@
         <Copyright>Copyright © 2024 David Le Bansais</Copyright>
         <AssemblyVersion>1.0.0.1</AssemblyVersion>
         <FileVersion>1.0.0.1</FileVersion>
-        <RepositoryUrl>https://github.com/dlebansais/DebugLogging</RepositoryUrl>
+        <RepositoryUrl>https://github.com/dlebansais/ProcessCommunication</RepositoryUrl>
         <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
 
         <NeutralLanguage>en-US</NeutralLanguage>
