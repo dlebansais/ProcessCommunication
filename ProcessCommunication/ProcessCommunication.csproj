@@ -7,14 +7,14 @@
         <Platforms>x64</Platforms>
 
         <RootNamespace>ProcessCommunication</RootNamespace>
-        <Version>1.0.0</Version>
+        <Version>1.0.1</Version>
         <Authors>David Le Bansais</Authors>
         <Company />
         <Product />
         <Description>A library to communicate between processes</Description>
         <Copyright>Copyright © 2024 David Le Bansais</Copyright>
-        <AssemblyVersion>1.0.0.1</AssemblyVersion>
-        <FileVersion>1.0.0.1</FileVersion>
+        <AssemblyVersion>1.0.1.2</AssemblyVersion>
+        <FileVersion>1.0.1.2</FileVersion>
         <RepositoryUrl>https://github.com/dlebansais/ProcessCommunication</RepositoryUrl>
         <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
 
