@@ -2,6 +2,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.Threading.Tasks;
 using NUnit.Framework;
 
@@ -22,7 +23,7 @@ public class TestRemote
         Channel = Remote.LaunchAndOpenChannel(PathToProccess, TestChannel.TestGuid);
         Assert.That(Channel, Is.Null);
 
-        await Task.Delay(TimeSpan.FromSeconds(9.0 - TestStopwatch.Elapsed.TotalSeconds)).ConfigureAwait(true);
+        await Task.Delay(Timeouts.ProcessLaunchTimeout - TimeSpan.FromSeconds(1) - TestStopwatch.Elapsed).ConfigureAwait(true);
 
         Channel = Remote.LaunchAndOpenChannel(PathToProccess, TestChannel.TestGuid);
         Assert.That(Channel, Is.Null);
@@ -39,18 +40,19 @@ public class TestRemote
         Channel? Channel;
 
         Stopwatch TestStopwatch = Stopwatch.StartNew();
+        TimeSpan ExitDelay = TimeSpan.FromSeconds(20);
 
-        Channel = Remote.LaunchAndOpenChannel(PathToProccess, TestChannel.TestGuid, "20");
+        Channel = Remote.LaunchAndOpenChannel(PathToProccess, TestChannel.TestGuid, ExitDelay.TotalSeconds.ToString(CultureInfo.InvariantCulture));
         Assert.That(Channel, Is.Null);
 
-        await Task.Delay(TimeSpan.FromSeconds(9.0 - TestStopwatch.Elapsed.TotalSeconds)).ConfigureAwait(true);
+        await Task.Delay(Timeouts.ProcessLaunchTimeout - TimeSpan.FromSeconds(1) - TestStopwatch.Elapsed).ConfigureAwait(true);
 
         Channel = Remote.LaunchAndOpenChannel(PathToProccess, TestChannel.TestGuid);
         Assert.That(Channel, Is.Not.Null);
 
         Channel.Dispose();
 
-        await Task.Delay(TimeSpan.FromSeconds(25)).ConfigureAwait(true);
+        await Task.Delay(ExitDelay + TimeSpan.FromSeconds(5)).ConfigureAwait(true);
     }
 
     [Test]
@@ -62,24 +64,24 @@ public class TestRemote
         string PathToProccess = Remote.GetSiblingFullPath("TestProcess.exe");
         Channel? Channel;
 
-        Stopwatch TestStopwatch = Stopwatch.StartNew();
+        TimeSpan ExitDelay = TimeSpan.FromSeconds(20);
 
-        Channel = Remote.LaunchAndOpenChannel(PathToProccess, TestChannel.TestGuid, "20");
+        Channel = Remote.LaunchAndOpenChannel(PathToProccess, TestChannel.TestGuid, ExitDelay.TotalSeconds.ToString(CultureInfo.InvariantCulture));
         Assert.That(Channel, Is.Null);
 
-        await Task.Delay(TimeSpan.FromSeconds(11.0 - TestStopwatch.Elapsed.TotalSeconds)).ConfigureAwait(true);
+        await Task.Delay(Timeouts.ProcessLaunchTimeout + TimeSpan.FromSeconds(1)).ConfigureAwait(true);
 
         Channel = Remote.LaunchAndOpenChannel(PathToProccess, TestChannel.TestGuid);
         Assert.That(Channel, Is.Null);
 
         Remote.Reset();
 
-        Channel = Remote.LaunchAndOpenChannel(PathToProccess, TestChannel.TestGuid, "20");
+        Channel = Remote.LaunchAndOpenChannel(PathToProccess, TestChannel.TestGuid, ExitDelay.TotalSeconds.ToString(CultureInfo.InvariantCulture));
         Assert.That(Channel, Is.Not.Null);
 
         Channel.Dispose();
 
-        await Task.Delay(TimeSpan.FromSeconds(25)).ConfigureAwait(true);
+        await Task.Delay(ExitDelay + TimeSpan.FromSeconds(5)).ConfigureAwait(true);
     }
 #endif
 }
