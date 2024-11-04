@@ -3,7 +3,7 @@
 /// <summary>
 /// Represents channel modes.
 /// </summary>
-public enum Mode
+public enum ChannelMode
 {
     /// <summary>
     /// The send mode.

@@ -1,7 +1,6 @@
 ﻿namespace ProcessCommunication;
 
 using System;
-using System.Diagnostics;
 using System.IO.MemoryMappedFiles;
 using Contracts;
 
@@ -10,7 +9,7 @@ using Contracts;
 /// </summary>
 /// <param name="guid">The channel guid.</param>
 /// <param name="mode">The caller channel mode.</param>
-public class Channel(Guid guid, Mode mode) : IDisposable
+public class Channel(Guid guid, ChannelMode mode) : IDisposable
 {
     /// <summary>
     /// Gets a shared guid from client to server.
@@ -30,7 +29,7 @@ public class Channel(Guid guid, Mode mode) : IDisposable
     /// <summary>
     /// Gets the caller channel mode.
     /// </summary>
-    public Mode Mode { get; } = mode;
+    public ChannelMode Mode { get; } = mode;
 
     /// <summary>
     /// Opens the channel.
@@ -50,8 +49,8 @@ public class Channel(Guid guid, Mode mode) : IDisposable
 
             MemoryMappedFile NewFile = Mode switch
             {
-                Mode.Receive => MemoryMappedFile.CreateNew(ChannelName, CapacityWithHeadTail, MemoryMappedFileAccess.ReadWrite),
-                Mode.Send or _ => MemoryMappedFile.OpenExisting(ChannelName, MemoryMappedFileRights.ReadWrite),
+                ChannelMode.Receive => MemoryMappedFile.CreateNew(ChannelName, CapacityWithHeadTail, MemoryMappedFileAccess.ReadWrite),
+                ChannelMode.Send or _ => MemoryMappedFile.OpenExisting(ChannelName, MemoryMappedFileRights.ReadWrite),
             };
 
             MemoryMappedViewAccessor NewAccessor = NewFile.CreateViewAccessor();
@@ -77,92 +76,46 @@ public class Channel(Guid guid, Mode mode) : IDisposable
     /// <summary>
     /// Reads data from the channel.
     /// </summary>
+    /// <param name="data">The data read upon return if successful.</param>
+    /// <returns><see langword="true"/> data has been read; otherwise, <see langword="false"/>.</returns>
     /// <exception cref="InvalidOperationException">The channel is not open.</exception>
-    public byte[]? Read()
+    public bool TryRead(out byte[] data)
     {
-        if (Accessor is null)
+        if (Accessor is null || Mode != ChannelMode.Receive)
             throw new InvalidOperationException();
 
-        int EndOfBuffer = Capacity;
-        Accessor.Read(EndOfBuffer, out int Head);
-        Accessor.Read(EndOfBuffer + sizeof(int), out int Tail);
-
-        byte[]? Result;
-
-        if (Head > Tail)
-        {
-            int Length = Head - Tail;
-            Result = new byte[Length];
-            int Read = Accessor.ReadArray(Tail, Result, 0, Length);
-            Debug.Assert(Read == Length);
-        }
-        else if (Head < Tail)
-        {
-            int Length = EndOfBuffer - Tail + Head;
-            Result = new byte[Length];
-            int Read = Accessor.ReadArray(Tail, Result, 0, EndOfBuffer - Tail);
-            Read += Accessor.ReadArray(0, Result, EndOfBuffer - Tail, Head);
-            Debug.Assert(Read == Length);
-        }
-        else
-            return null;
-
-        // Copy head to tail.
-        Accessor.Write(EndOfBuffer + sizeof(int), Head);
-
-        return Result;
+        return CircularBufferHelper.Read(Accessor, Capacity, out data);
     }
 
     /// <summary>
     /// Gets the number of free bytes in the channel.
     /// </summary>
+    /// <exception cref="InvalidOperationException">The channel is not open.</exception>
     public int GetFreeLength()
     {
         if (Accessor is null)
             throw new InvalidOperationException();
 
-        int EndOfBuffer = Capacity;
-        Accessor.Read(EndOfBuffer, out int Head);
-        Accessor.Read(EndOfBuffer + sizeof(int), out int Tail);
-
-        return GetFreeLength(Head, Tail, Capacity);
-    }
-
-    private static int GetFreeLength(int head, int tail, int capacity)
-    {
-        if (tail > head)
-            return tail - head - 1;
-        else
-            return capacity - head + tail - 1;
+        return CircularBufferHelper.GetFreeLength(Accessor, Capacity);
     }
 
     /// <summary>
     /// Gets the number of used bytes in the channel.
     /// </summary>
+    /// <exception cref="InvalidOperationException">The channel is not open.</exception>
     public int GetUsedLength()
     {
         if (Accessor is null)
             throw new InvalidOperationException();
 
-        int EndOfBuffer = Capacity;
-        Accessor.Read(EndOfBuffer, out int Head);
-        Accessor.Read(EndOfBuffer + sizeof(int), out int Tail);
-
-        return GetUsedLength(Head, Tail, Capacity);
-    }
-
-    private static int GetUsedLength(int head, int tail, int capacity)
-    {
-        if (head >= tail)
-            return head - tail;
-        else
-            return capacity - tail + head;
+        return CircularBufferHelper.GetUsedLength(Accessor, Capacity);
     }
 
     /// <summary>
     /// Writes data to the channel.
     /// </summary>
     /// <param name="data">The data to write.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="data"/> is <see langword="null"/>.</exception>
     /// <exception cref="InvalidOperationException">The channel is not open.</exception>
     public void Write(byte[] data)
     {
@@ -173,40 +126,10 @@ public class Channel(Guid guid, Mode mode) : IDisposable
             throw new ArgumentNullException(nameof(data));
 #endif
 
-        if (Accessor is null)
+        if (Accessor is null || Mode == ChannelMode.Receive)
             throw new InvalidOperationException();
 
-        int EndOfBuffer = Capacity;
-        Accessor.Read(EndOfBuffer, out int Head);
-        Accessor.Read(EndOfBuffer + sizeof(int), out int Tail);
-
-        int Length = data.Length;
-
-        if (Tail > Head)
-        {
-            if (Length > Tail - Head - 1)
-                throw new InvalidOperationException();
-
-            Accessor.WriteArray(Head, data, 0, data.Length);
-        }
-        else
-        {
-            if (Length > EndOfBuffer - Head + Tail - 1)
-                throw new InvalidOperationException();
-
-            int FirstCopyLength = Math.Min(EndOfBuffer - Head, Length);
-            int SecondCopyLength = Length - FirstCopyLength;
-
-            Accessor.WriteArray(Head, data, 0, FirstCopyLength);
-            Accessor.WriteArray(0, data, FirstCopyLength, SecondCopyLength);
-        }
-
-        Head += Length;
-        if (Head >= EndOfBuffer)
-            Head -= EndOfBuffer;
-
-        // Copy the new head.
-        Accessor.Write(EndOfBuffer, Head);
+        CircularBufferHelper.Write(Accessor, Capacity, data);
     }
 
     /// <summary>
@@ -223,16 +146,20 @@ public class Channel(Guid guid, Mode mode) : IDisposable
         Accessor.Read(EndOfBuffer, out int Head);
         Accessor.Read(EndOfBuffer + sizeof(int), out int Tail);
 
-        int FreeLength = GetFreeLength(Head, Tail, Capacity);
-        int UsedLength = GetUsedLength(Head, Tail, Capacity);
+        int FreeLength = CircularBufferHelper.GetFreeLength(Head, Tail, Capacity);
+        int UsedLength = CircularBufferHelper.GetUsedLength(Head, Tail, Capacity);
         return $"{channelName} - Head:{Head} Tail:{Tail} Capacity:{Capacity} Free:{FreeLength} Used:{UsedLength}";
     }
 
     /// <summary>
-    /// Closes the chanel.
+    /// Closes the channel.
     /// </summary>
+    /// <exception cref="InvalidOperationException">The channel is not open.</exception>
     public void Close()
     {
+        if (!IsOpen)
+            return;
+
         SetFileAndAccessor(null, null);
     }
 
@@ -247,7 +174,7 @@ public class Channel(Guid guid, Mode mode) : IDisposable
 
     private MemoryMappedFile? File;
     private MemoryMappedViewAccessor? Accessor;
-    private bool disposedValue;
+    private bool DisposedValue;
 
     /// <summary>
     /// Optiuonally disposes of the instance.
@@ -255,14 +182,14 @@ public class Channel(Guid guid, Mode mode) : IDisposable
     /// <param name="disposing">True if disposing must be done.</param>
     protected virtual void Dispose(bool disposing)
     {
-        if (!disposedValue)
+        if (!DisposedValue)
         {
             if (disposing)
             {
                 Close();
             }
 
-            disposedValue = true;
+            DisposedValue = true;
         }
     }
 

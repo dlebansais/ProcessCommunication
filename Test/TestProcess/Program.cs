@@ -11,7 +11,7 @@ internal class Program
 
     private static void Main(string[] args)
     {
-        using Channel Channel = new(TestGuid, Mode.Receive);
+        using Channel Channel = new(TestGuid, ChannelMode.Receive);
         Channel.Open();
 
         if (!Channel.IsOpen)
@@ -28,7 +28,7 @@ internal class Program
         {
             Thread.Sleep(100);
 
-            _ = Channel.Read();
+            _ = Channel.TryRead(out _);
         }
     }
 }

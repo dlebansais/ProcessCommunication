@@ -4,15 +4,15 @@ using System;
 using NUnit.Framework;
 
 [TestFixture]
-public class TestChannel
+public class TestMultiChannel
 {
     internal static readonly Guid TestGuid = new("20E9C969-C990-4DEB-984F-979C824DCC18");
 
     [Test]
     public void TestSuccess()
     {
-        using Channel TestReceiver = new(TestGuid, ChannelMode.Receive);
-        using Channel TestSender = new(TestGuid, ChannelMode.Send);
+        using MultiChannel TestReceiver = new(TestGuid, ChannelMode.Receive, 1);
+        using MultiChannel TestSender = new(TestGuid, ChannelMode.Send, 1);
 
         Assert.That(TestReceiver, Is.Not.Null);
         Assert.That(TestSender, Is.Not.Null);
@@ -25,9 +25,9 @@ public class TestChannel
         Assert.That(TestReceiver.LastError, Is.Empty);
         Assert.That(TestSender.LastError, Is.Empty);
 
-        Assert.That(TestReceiver.GetFreeLength(), Is.EqualTo(Channel.Capacity - 1));
+        Assert.That(TestReceiver.GetFreeLength(), Is.EqualTo(MultiChannel.Capacity - 1));
         Assert.That(TestReceiver.GetUsedLength(), Is.EqualTo(0));
-        Assert.That(TestSender.GetFreeLength(), Is.EqualTo(Channel.Capacity - 1));
+        Assert.That(TestSender.GetFreeLength(), Is.EqualTo(MultiChannel.Capacity - 1));
         Assert.That(TestSender.GetUsedLength(), Is.EqualTo(0));
 
         TestReceiver.Close();
@@ -42,8 +42,8 @@ public class TestChannel
     [Test]
     public void TestReadWrite()
     {
-        using Channel TestReceiver = new(TestGuid, ChannelMode.Receive);
-        using Channel TestSender = new(TestGuid, ChannelMode.Send);
+        using MultiChannel TestReceiver = new(TestGuid, ChannelMode.Receive, 1);
+        using MultiChannel TestSender = new(TestGuid, ChannelMode.Send, 1);
 
         Assert.That(TestReceiver, Is.Not.Null);
         Assert.That(TestSender, Is.Not.Null);
@@ -59,22 +59,23 @@ public class TestChannel
         byte[] DataSent = [0, 1, 2, 3, 4, 5];
         TestSender.Write(DataSent);
 
-        Assert.That(TestSender.GetFreeLength(), Is.EqualTo(Channel.Capacity - 1 - DataSent.Length));
+        Assert.That(TestSender.GetFreeLength(), Is.EqualTo(MultiChannel.Capacity - 1 - DataSent.Length));
         Assert.That(TestSender.GetUsedLength(), Is.EqualTo(DataSent.Length));
 
-        Assert.That(TestReceiver.GetFreeLength(), Is.EqualTo(Channel.Capacity - 1 - DataSent.Length));
+        Assert.That(TestReceiver.GetFreeLength(), Is.EqualTo(MultiChannel.Capacity - 1 - DataSent.Length));
         Assert.That(TestReceiver.GetUsedLength(), Is.EqualTo(DataSent.Length));
 
-        bool IsDataReceived = TestReceiver.TryRead(out byte[] DataReceived);
+        bool IsDataReceived = TestReceiver.TryRead(out byte[] DataReceived, out int Index);
 
         Assert.That(IsDataReceived, Is.True);
         Assert.That(DataReceived, Is.Not.Null);
         Assert.That(DataReceived, Is.EqualTo(DataSent));
+        Assert.That(Index, Is.EqualTo(0));
 
-        Assert.That(TestSender.GetFreeLength(), Is.EqualTo(Channel.Capacity - 1));
+        Assert.That(TestSender.GetFreeLength(), Is.EqualTo(MultiChannel.Capacity - 1));
         Assert.That(TestSender.GetUsedLength(), Is.EqualTo(0));
 
-        Assert.That(TestReceiver.GetFreeLength(), Is.EqualTo(Channel.Capacity - 1));
+        Assert.That(TestReceiver.GetFreeLength(), Is.EqualTo(MultiChannel.Capacity - 1));
         Assert.That(TestReceiver.GetUsedLength(), Is.EqualTo(0));
 
         string ReceiverStats = TestReceiver.GetStats(string.Empty);
@@ -95,7 +96,7 @@ public class TestChannel
     [Test]
     public void TestOpenError()
     {
-        using Channel TestReceiver = new(TestGuid, ChannelMode.Receive);
+        using MultiChannel TestReceiver = new(TestGuid, ChannelMode.Receive, 1);
 
         TestReceiver.Open();
 
@@ -111,8 +112,8 @@ public class TestChannel
     [Test]
     public void TestMultipleOpen()
     {
-        using Channel TestReceiver1 = new(TestGuid, ChannelMode.Receive);
-        using Channel TestReceiver2 = new(TestGuid, ChannelMode.Receive);
+        using MultiChannel TestReceiver1 = new(TestGuid, ChannelMode.Receive, 1);
+        using MultiChannel TestReceiver2 = new(TestGuid, ChannelMode.Receive, 1);
 
         TestReceiver1.Open();
         TestReceiver2.Open();
@@ -127,7 +128,7 @@ public class TestChannel
     [Test]
     public void TestMultipleClose()
     {
-        using Channel TestReceiver = new(TestGuid, ChannelMode.Receive);
+        using MultiChannel TestReceiver = new(TestGuid, ChannelMode.Receive, 1);
 
         TestReceiver.Open();
 
@@ -145,8 +146,8 @@ public class TestChannel
     [Test]
     public void TestReadError()
     {
-        using Channel TestReceiver = new(TestGuid, ChannelMode.Receive);
-        using Channel TestSender = new(TestGuid, ChannelMode.Send);
+        using MultiChannel TestReceiver = new(TestGuid, ChannelMode.Receive, 1);
+        using MultiChannel TestSender = new(TestGuid, ChannelMode.Send, 1);
 
         Assert.That(TestReceiver, Is.Not.Null);
         Assert.That(TestSender, Is.Not.Null);
@@ -164,7 +165,7 @@ public class TestChannel
 
         TestReceiver.Close();
 
-        _ = Assert.Throws<InvalidOperationException>(() => TestReceiver.TryRead(out _));
+        _ = Assert.Throws<InvalidOperationException>(() => TestReceiver.TryRead(out _, out _));
 
         TestSender.Close();
 
@@ -177,8 +178,8 @@ public class TestChannel
     [Test]
     public void TestWriteError()
     {
-        using Channel TestReceiver = new(TestGuid, ChannelMode.Receive);
-        using Channel TestSender = new(TestGuid, ChannelMode.Send);
+        using MultiChannel TestReceiver = new(TestGuid, ChannelMode.Receive, 1);
+        using MultiChannel TestSender = new(TestGuid, ChannelMode.Send, 1);
 
         Assert.That(TestReceiver, Is.Not.Null);
         Assert.That(TestSender, Is.Not.Null);
@@ -211,8 +212,8 @@ public class TestChannel
     [Test]
     public void TestGetLengthError()
     {
-        using Channel TestReceiver = new(TestGuid, ChannelMode.Receive);
-        using Channel TestSender = new(TestGuid, ChannelMode.Send);
+        using MultiChannel TestReceiver = new(TestGuid, ChannelMode.Receive, 1);
+        using MultiChannel TestSender = new(TestGuid, ChannelMode.Send, 1);
 
         Assert.That(TestReceiver, Is.Not.Null);
         Assert.That(TestSender, Is.Not.Null);
@@ -245,8 +246,8 @@ public class TestChannel
     [Test]
     public void TestDispose()
     {
-        using Channel TestReceiver = new(TestGuid, ChannelMode.Receive);
-        using Channel TestSender = new(TestGuid, ChannelMode.Send);
+        using MultiChannel TestReceiver = new(TestGuid, ChannelMode.Receive, 1);
+        using MultiChannel TestSender = new(TestGuid, ChannelMode.Send, 1);
 
         Assert.That(TestReceiver, Is.Not.Null);
         Assert.That(TestSender, Is.Not.Null);
@@ -260,8 +261,8 @@ public class TestChannel
     [Test]
     public void TestReadWriteLarge()
     {
-        using Channel TestReceiver = new(TestGuid, ChannelMode.Receive);
-        using Channel TestSender = new(TestGuid, ChannelMode.Send);
+        using MultiChannel TestReceiver = new(TestGuid, ChannelMode.Receive, 1);
+        using MultiChannel TestSender = new(TestGuid, ChannelMode.Send, 1);
 
         Assert.That(TestReceiver, Is.Not.Null);
         Assert.That(TestSender, Is.Not.Null);
@@ -274,7 +275,7 @@ public class TestChannel
         Assert.That(TestReceiver.LastError, Is.Empty);
         Assert.That(TestSender.LastError, Is.Empty);
 
-        byte[] DataSent = new byte[(Channel.Capacity * 3) / 16];
+        byte[] DataSent = new byte[(MultiChannel.Capacity * 3) / 16];
         for (int i = 0; i < DataSent.Length; i++)
             DataSent[i] = (byte)i;
 
@@ -282,26 +283,27 @@ public class TestChannel
         {
             TestSender.Write(DataSent);
 
-            Assert.That(TestSender.GetFreeLength(), Is.EqualTo(Channel.Capacity - 1 - DataSent.Length));
+            Assert.That(TestSender.GetFreeLength(), Is.EqualTo(MultiChannel.Capacity - 1 - DataSent.Length));
             Assert.That(TestSender.GetUsedLength(), Is.EqualTo(DataSent.Length));
 
-            Assert.That(TestReceiver.GetFreeLength(), Is.EqualTo(Channel.Capacity - 1 - DataSent.Length));
+            Assert.That(TestReceiver.GetFreeLength(), Is.EqualTo(MultiChannel.Capacity - 1 - DataSent.Length));
             Assert.That(TestReceiver.GetUsedLength(), Is.EqualTo(DataSent.Length));
 
-            bool IsDataReceived = TestReceiver.TryRead(out byte[] DataReceived);
+            bool IsDataReceived = TestReceiver.TryRead(out byte[] DataReceived, out int Index);
 
             Assert.That(IsDataReceived, Is.True);
             Assert.That(DataReceived, Is.Not.Null);
             Assert.That(DataReceived, Is.EqualTo(DataSent));
+            Assert.That(Index, Is.EqualTo(0));
 
-            Assert.That(TestSender.GetFreeLength(), Is.EqualTo(Channel.Capacity - 1));
+            Assert.That(TestSender.GetFreeLength(), Is.EqualTo(MultiChannel.Capacity - 1));
             Assert.That(TestSender.GetUsedLength(), Is.EqualTo(0));
 
-            Assert.That(TestReceiver.GetFreeLength(), Is.EqualTo(Channel.Capacity - 1));
+            Assert.That(TestReceiver.GetFreeLength(), Is.EqualTo(MultiChannel.Capacity - 1));
             Assert.That(TestReceiver.GetUsedLength(), Is.EqualTo(0));
         }
 
-        bool IsLastDataReceived = TestReceiver.TryRead(out _);
+        bool IsLastDataReceived = TestReceiver.TryRead(out _, out _);
 
         Assert.That(IsLastDataReceived, Is.False);
 
@@ -317,8 +319,8 @@ public class TestChannel
     [Test]
     public void TestReadHalfFill()
     {
-        using Channel TestReceiver = new(TestGuid, ChannelMode.Receive);
-        using Channel TestSender = new(TestGuid, ChannelMode.Send);
+        using MultiChannel TestReceiver = new(TestGuid, ChannelMode.Receive, 1);
+        using MultiChannel TestSender = new(TestGuid, ChannelMode.Send, 1);
 
         Assert.That(TestReceiver, Is.Not.Null);
         Assert.That(TestSender, Is.Not.Null);
@@ -331,31 +333,31 @@ public class TestChannel
         Assert.That(TestReceiver.LastError, Is.Empty);
         Assert.That(TestSender.LastError, Is.Empty);
 
-        byte[] DataSent = new byte[(Channel.Capacity * 3) / 16];
+        byte[] DataSent = new byte[(MultiChannel.Capacity * 3) / 16];
 
         for (int i = 0; i < 4; i++)
             TestSender.Write(DataSent);
 
         for (int i = 0; i < 4; i++)
-            _ = TestReceiver.TryRead(out _);
+            _ = TestReceiver.TryRead(out _, out _);
 
         for (int i = 0; i < 4; i++)
             TestSender.Write(DataSent);
 
         for (int i = 0; i < 4; i++)
-            _ = TestReceiver.TryRead(out _);
+            _ = TestReceiver.TryRead(out _, out _);
 
         for (int i = 0; i < 4; i++)
             TestSender.Write(DataSent);
 
         for (int i = 0; i < 4; i++)
-            _ = TestReceiver.TryRead(out _);
+            _ = TestReceiver.TryRead(out _, out _);
 
         for (int i = 0; i < 4; i++)
             TestSender.Write(DataSent);
 
         for (int i = 0; i < 4; i++)
-            _ = TestReceiver.TryRead(out _);
+            _ = TestReceiver.TryRead(out _, out _);
 
         TestReceiver.Close();
         TestSender.Close();
@@ -369,8 +371,8 @@ public class TestChannel
     [Test]
     public void TestWriteSaturate1()
     {
-        using Channel TestReceiver = new(TestGuid, ChannelMode.Receive);
-        using Channel TestSender = new(TestGuid, ChannelMode.Send);
+        using MultiChannel TestReceiver = new(TestGuid, ChannelMode.Receive, 1);
+        using MultiChannel TestSender = new(TestGuid, ChannelMode.Send, 1);
 
         Assert.That(TestReceiver, Is.Not.Null);
         Assert.That(TestSender, Is.Not.Null);
@@ -383,7 +385,7 @@ public class TestChannel
         Assert.That(TestReceiver.LastError, Is.Empty);
         Assert.That(TestSender.LastError, Is.Empty);
 
-        byte[] DataSent = new byte[(Channel.Capacity * 3) / 16];
+        byte[] DataSent = new byte[(MultiChannel.Capacity * 3) / 16];
 
         for (int i = 0; i < 5; i++)
             TestSender.Write(DataSent);
@@ -404,8 +406,8 @@ public class TestChannel
     [Test]
     public void TestWriteSaturate2()
     {
-        using Channel TestReceiver = new(TestGuid, ChannelMode.Receive);
-        using Channel TestSender = new(TestGuid, ChannelMode.Send);
+        using MultiChannel TestReceiver = new(TestGuid, ChannelMode.Receive, 1);
+        using MultiChannel TestSender = new(TestGuid, ChannelMode.Send, 1);
 
         Assert.That(TestReceiver, Is.Not.Null);
         Assert.That(TestSender, Is.Not.Null);
@@ -418,12 +420,12 @@ public class TestChannel
         Assert.That(TestReceiver.LastError, Is.Empty);
         Assert.That(TestSender.LastError, Is.Empty);
 
-        byte[] DataSent = new byte[(Channel.Capacity * 3) / 16];
+        byte[] DataSent = new byte[(MultiChannel.Capacity * 3) / 16];
 
         for (int i = 0; i < 3; i++)
         {
             TestSender.Write(DataSent);
-            _ = TestReceiver.TryRead(out _);
+            _ = TestReceiver.TryRead(out _, out _);
         }
 
         for (int i = 0; i < 5; i++)

@@ -54,7 +54,7 @@ public static class Remote
         }
 
         if (CreatedChannel is null)
-            SetChannel(new(guid, Mode.Send));
+            SetChannel(new(guid, ChannelMode.Send));
 
         CreatedChannel = Contract.AssertNotNull(CreatedChannel);
 

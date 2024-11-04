@@ -2,7 +2,7 @@
 
 using System;
 
-public class TestChannelChild(Guid guid, Mode mode) : Channel(guid, mode)
+public class TestChannelChild(Guid guid, ChannelMode mode) : Channel(guid, mode)
 {
     protected override void Dispose(bool disposing)
     {
