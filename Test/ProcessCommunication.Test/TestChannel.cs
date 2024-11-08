@@ -441,4 +441,43 @@ public class TestChannel
         Assert.That(TestReceiver.LastError, Is.Empty);
         Assert.That(TestSender.LastError, Is.Empty);
     }
+
+    [Test]
+    public void TestCapacity()
+    {
+        using Channel TestReceiver = new(TestGuid, ChannelMode.Receive);
+        using Channel TestSender = new(TestGuid, ChannelMode.Send);
+
+        Assert.That(TestReceiver, Is.Not.Null);
+        Assert.That(TestSender, Is.Not.Null);
+
+        TestReceiver.Open();
+        TestSender.Open();
+
+        Assert.That(TestReceiver.IsOpen, Is.True);
+        Assert.That(TestSender.IsOpen, Is.True);
+        Assert.That(TestReceiver.LastError, Is.Empty);
+        Assert.That(TestSender.LastError, Is.Empty);
+
+        int OldCapacity = Channel.Capacity;
+
+        Assert.That(OldCapacity, Is.GreaterThan(0));
+
+        Channel.Capacity = OldCapacity * 2;
+
+        Assert.That(TestReceiver.GetFreeLength(), Is.EqualTo(OldCapacity - 1));
+        Assert.That(TestReceiver.GetUsedLength(), Is.EqualTo(0));
+        Assert.That(TestSender.GetFreeLength(), Is.EqualTo(OldCapacity - 1));
+        Assert.That(TestSender.GetUsedLength(), Is.EqualTo(0));
+
+        TestReceiver.Close();
+        TestSender.Close();
+
+        Assert.That(TestReceiver.IsOpen, Is.False);
+        Assert.That(TestSender.IsOpen, Is.False);
+        Assert.That(TestReceiver.LastError, Is.Empty);
+        Assert.That(TestSender.LastError, Is.Empty);
+
+        Channel.Capacity = OldCapacity;
+    }
 }

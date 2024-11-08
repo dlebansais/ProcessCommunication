@@ -11,24 +11,58 @@ internal class Program
 
     private static void Main(string[] args)
     {
+        int ArgIndex = 0;
+        bool IsMulti = bool.Parse(args[ArgIndex++]);
+
+        int ChannelCount = 1;
+        if (args.Length > ArgIndex && int.TryParse(args[ArgIndex++], out int ArgChannelCount))
+            ChannelCount = ArgChannelCount;
+
+        int MaxDuration = 1;
+        if (args.Length > ArgIndex && int.TryParse(args[ArgIndex++], out int ArgMaxDuration))
+            MaxDuration = ArgMaxDuration;
+
+        if (IsMulti)
+            RunMultiReceiver(ChannelCount, MaxDuration);
+        else
+            RunSingleReceiver(MaxDuration);
+    }
+
+    private static void RunSingleReceiver(int maxDuration)
+    {
         using Channel Channel = new(TestGuid, ChannelMode.Receive);
         Channel.Open();
 
         if (!Channel.IsOpen)
             return;
 
-        int MaxDuration = 1;
-        if (args.Length > 0 && int.TryParse(args[0], out int ArgMaxDuration))
-            MaxDuration = ArgMaxDuration;
-
         Stopwatch Stopwatch = Stopwatch.StartNew();
-        TimeSpan Timeout = TimeSpan.FromSeconds(MaxDuration);
+        TimeSpan Timeout = TimeSpan.FromSeconds(maxDuration);
 
         while (Stopwatch.Elapsed < Timeout)
         {
             Thread.Sleep(100);
 
             _ = Channel.TryRead(out _);
+        }
+    }
+
+    private static void RunMultiReceiver(int channelCount, int maxDuration)
+    {
+        using MultiChannel Channel = new(TestGuid, ChannelMode.Receive, channelCount);
+        Channel.Open();
+
+        if (!Channel.IsOpen)
+            return;
+
+        Stopwatch Stopwatch = Stopwatch.StartNew();
+        TimeSpan Timeout = TimeSpan.FromSeconds(maxDuration);
+
+        while (Stopwatch.Elapsed < Timeout)
+        {
+            Thread.Sleep(100);
+
+            _ = Channel.TryRead(out _, out _);
         }
     }
 }

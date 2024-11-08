@@ -44,7 +44,7 @@ public class Channel(Guid guid, ChannelMode mode) : IDisposable
 
         try
         {
-            int CapacityWithHeadTail = Capacity + (sizeof(int) * 2);
+            int CapacityWithHeadTail = EffectiveCapacity + (sizeof(int) * 2);
             string ChannelName = Guid.ToString("B");
 
             MemoryMappedFile NewFile = Mode switch
@@ -75,16 +75,17 @@ public class Channel(Guid guid, ChannelMode mode) : IDisposable
 
     /// <summary>
     /// Reads data from the channel.
+    /// This method requires <see cref="Mode"/> to be <see cref="ChannelMode.Receive"/>.
     /// </summary>
     /// <param name="data">The data read upon return if successful.</param>
     /// <returns><see langword="true"/> data has been read; otherwise, <see langword="false"/>.</returns>
     /// <exception cref="InvalidOperationException">The channel is not open.</exception>
     public bool TryRead(out byte[] data)
     {
-        if (Accessor is null || Mode != ChannelMode.Receive)
+        if (Mode != ChannelMode.Receive || Accessor is null)
             throw new InvalidOperationException();
 
-        return CircularBufferHelper.Read(Accessor, Capacity, out data);
+        return CircularBufferHelper.Read(Accessor, EffectiveCapacity, out data);
     }
 
     /// <summary>
@@ -96,7 +97,7 @@ public class Channel(Guid guid, ChannelMode mode) : IDisposable
         if (Accessor is null)
             throw new InvalidOperationException();
 
-        return CircularBufferHelper.GetFreeLength(Accessor, Capacity);
+        return CircularBufferHelper.GetFreeLength(Accessor, EffectiveCapacity);
     }
 
     /// <summary>
@@ -108,11 +109,12 @@ public class Channel(Guid guid, ChannelMode mode) : IDisposable
         if (Accessor is null)
             throw new InvalidOperationException();
 
-        return CircularBufferHelper.GetUsedLength(Accessor, Capacity);
+        return CircularBufferHelper.GetUsedLength(Accessor, EffectiveCapacity);
     }
 
     /// <summary>
     /// Writes data to the channel.
+    /// This method requires <see cref="Mode"/> to be <see cref="ChannelMode.Send"/>.
     /// </summary>
     /// <param name="data">The data to write.</param>
     /// <exception cref="ArgumentNullException"><paramref name="data"/> is <see langword="null"/>.</exception>
@@ -126,10 +128,10 @@ public class Channel(Guid guid, ChannelMode mode) : IDisposable
             throw new ArgumentNullException(nameof(data));
 #endif
 
-        if (Accessor is null || Mode == ChannelMode.Receive)
+        if (Mode == ChannelMode.Receive || Accessor is null)
             throw new InvalidOperationException();
 
-        CircularBufferHelper.Write(Accessor, Capacity, data);
+        CircularBufferHelper.Write(Accessor, EffectiveCapacity, data);
     }
 
     /// <summary>
@@ -142,13 +144,13 @@ public class Channel(Guid guid, ChannelMode mode) : IDisposable
         if (Accessor is null)
             throw new InvalidOperationException();
 
-        int EndOfBuffer = Capacity;
+        int EndOfBuffer = EffectiveCapacity;
         Accessor.Read(EndOfBuffer, out int Head);
         Accessor.Read(EndOfBuffer + sizeof(int), out int Tail);
 
-        int FreeLength = CircularBufferHelper.GetFreeLength(Head, Tail, Capacity);
-        int UsedLength = CircularBufferHelper.GetUsedLength(Head, Tail, Capacity);
-        return $"{channelName} - Head:{Head} Tail:{Tail} Capacity:{Capacity} Free:{FreeLength} Used:{UsedLength}";
+        int FreeLength = CircularBufferHelper.GetFreeLength(Head, Tail, EffectiveCapacity);
+        int UsedLength = CircularBufferHelper.GetUsedLength(Head, Tail, EffectiveCapacity);
+        return $"{channelName} - Head:{Head} Tail:{Tail} Capacity:{EffectiveCapacity} Free:{FreeLength} Used:{UsedLength}";
     }
 
     /// <summary>
@@ -172,6 +174,7 @@ public class Channel(Guid guid, ChannelMode mode) : IDisposable
         Accessor = accessor;
     }
 
+    private readonly int EffectiveCapacity = Capacity > 0 ? Capacity : 0x100;
     private MemoryMappedFile? File;
     private MemoryMappedViewAccessor? Accessor;
     private bool DisposedValue;

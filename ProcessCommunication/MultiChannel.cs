@@ -3,6 +3,7 @@
 using System;
 using System.Globalization;
 using System.IO.MemoryMappedFiles;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using Contracts;
 
@@ -30,11 +31,14 @@ public class MultiChannel(Guid guid, ChannelMode mode, int channelCount) : IDisp
     public ChannelMode Mode { get; } = mode;
 
     /// <summary>
-    /// Gets the channel count. If 0 or less, 1 is assumed.
+    /// Gets the channel count. If 0 or less, 1 is assumed (see <see cref="EffectiveChannelCount"/>).
     /// </summary>
     public int ChannelCount { get; } = channelCount;
 
-    private int EffectiveChannelCount => ChannelCount > 0 ? ChannelCount : 1;
+    /// <summary>
+    /// Gets the effective channel count.
+    /// </summary>
+    public int EffectiveChannelCount { get; } = channelCount > 0 ? channelCount : 1;
 
     /// <summary>
     /// Opens the channel.
@@ -48,8 +52,7 @@ public class MultiChannel(Guid guid, ChannelMode mode, int channelCount) : IDisp
         Contract.Assert(LockAccessor is null);
         Contract.Assert(Array.TrueForAll(DataFiles, item => item is null));
         Contract.Assert(Array.TrueForAll(DataAccessors, item => item is null));
-        Contract.Assert(SelectedFile is null);
-        Contract.Assert(SelectedAccessor is null);
+        Contract.Assert(SendingIndex == -1);
 
         if (Mode == ChannelMode.Receive)
         {
@@ -69,7 +72,7 @@ public class MultiChannel(Guid guid, ChannelMode mode, int channelCount) : IDisp
         {
             try
             {
-                int CapacityWithHeadTail = Capacity + (sizeof(int) * 2);
+                int CapacityWithHeadTail = EffectiveCapacity + (sizeof(int) * 2);
                 string ChannelName = DataMapName(i);
 
                 MemoryMappedFile NewFile = MemoryMappedFile.CreateNew(ChannelName, CapacityWithHeadTail, MemoryMappedFileAccess.ReadWrite);
@@ -94,7 +97,7 @@ public class MultiChannel(Guid guid, ChannelMode mode, int channelCount) : IDisp
             try
             {
                 string ChannelName = LockMapName;
-                MemoryMappedFile NewFile = MemoryMappedFile.CreateNew(ChannelName, EffectiveChannelCount * sizeof(IntPtr), MemoryMappedFileAccess.ReadWrite);
+                MemoryMappedFile NewFile = MemoryMappedFile.CreateNew(ChannelName, EffectiveChannelCount * sizeof(int), MemoryMappedFileAccess.ReadWrite);
                 MemoryMappedViewAccessor NewAccessor = NewFile.CreateViewAccessor();
 
                 SetLockFileAndAccessor(NewFile, NewAccessor);
@@ -145,17 +148,17 @@ public class MultiChannel(Guid guid, ChannelMode mode, int channelCount) : IDisp
 
         unsafe
         {
-            int AvailableDataChannels = (int)(Accessor.Capacity / sizeof(IntPtr));
             byte* SafeMemoryPointer = default;
             Accessor.SafeMemoryMappedViewHandle.AcquirePointer(ref SafeMemoryPointer);
-            IntPtr BasePointer = (IntPtr)SafeMemoryPointer;
-            IntPtr Comparand = IntPtr.Zero;
-            IntPtr Value = IntPtr.Add(Comparand, 1);
+            void* BasePointer = SafeMemoryPointer;
+            const int Comparand = 0;
+            const int Value = 1;
 
-            for (int i = 0; i < AvailableDataChannels; i++)
+            for (int i = 0; i < EffectiveChannelCount; i++)
             {
-                IntPtr Pointer = IntPtr.Add(BasePointer, sizeof(IntPtr) * i);
-                IntPtr OriginalValue = Interlocked.CompareExchange(ref Pointer, Value, Comparand);
+                void* Pointer = Unsafe.Add<int>(BasePointer, i);
+                ref int Location = ref Unsafe.AsRef<int>(Pointer);
+                int OriginalValue = Interlocked.CompareExchange(ref Location, Value, Comparand);
 
                 if (OriginalValue == Comparand)
                 {
@@ -177,7 +180,7 @@ public class MultiChannel(Guid guid, ChannelMode mode, int channelCount) : IDisp
                 }
             }
 
-            LastError = $"Out of slots (Tried {AvailableDataChannels})";
+            LastError = $"Out of slots (Tried {EffectiveChannelCount})";
             return false;
         }
     }
@@ -195,9 +198,12 @@ public class MultiChannel(Guid guid, ChannelMode mode, int channelCount) : IDisp
         {
             byte* SafeMemoryPointer = default;
             Accessor.SafeMemoryMappedViewHandle.AcquirePointer(ref SafeMemoryPointer);
-            IntPtr Pointer = (IntPtr)SafeMemoryPointer;
-            IntPtr Value = IntPtr.Zero;
-            _ = Interlocked.Exchange(ref Pointer, Value);
+            void* BasePointer = SafeMemoryPointer;
+
+            const int Value = 0;
+            void* Pointer = Unsafe.Add<int>(BasePointer, SendingIndex);
+            ref int Location = ref Unsafe.AsRef<int>(Pointer);
+            _ = Interlocked.Exchange(ref Location, Value);
         }
 
         SetDataFileAndAccessor(SendingIndex, null, null);
@@ -212,7 +218,14 @@ public class MultiChannel(Guid guid, ChannelMode mode, int channelCount) : IDisp
     /// Gets a value indicating whether the specified channel is connected.
     /// </summary>
     /// <param name="index">The channel index.</param>
-    public bool IsConnected(int index) => DataAccessors[index] is not null;
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is not a valid index.</exception>
+    public bool IsConnected(int index)
+    {
+        if (index < 0 || index >= EffectiveChannelCount)
+            throw new ArgumentOutOfRangeException(nameof(index));
+
+        return DataAccessors[index] is not null;
+    }
 
     /// <summary>
     /// Gets the last error.
@@ -221,6 +234,7 @@ public class MultiChannel(Guid guid, ChannelMode mode, int channelCount) : IDisp
 
     /// <summary>
     /// Reads data from the channel.
+    /// This method requires <see cref="Mode"/> to be <see cref="ChannelMode.Receive"/>.
     /// </summary>
     /// <param name="data">The data read upon return if successful.</param>
     /// <param name="index">Index of the channel with data upon return.</param>
@@ -228,7 +242,7 @@ public class MultiChannel(Guid guid, ChannelMode mode, int channelCount) : IDisp
     /// <exception cref="InvalidOperationException">The channel is not open.</exception>
     public bool TryRead(out byte[] data, out int index)
     {
-        if (LockAccessor is null || Mode != ChannelMode.Receive)
+        if (Mode != ChannelMode.Receive || LockAccessor is null)
             throw new InvalidOperationException();
 
         int StartingIndex = ReceivingIndex++;
@@ -240,7 +254,7 @@ public class MultiChannel(Guid guid, ChannelMode mode, int channelCount) : IDisp
 
             if (DataAccessors[ReceivingIndex] is MemoryMappedViewAccessor ConnectedAccessor)
             {
-                if (CircularBufferHelper.Read(ConnectedAccessor, Capacity, out data))
+                if (CircularBufferHelper.Read(ConnectedAccessor, EffectiveCapacity, out data))
                 {
                     index = ReceivingIndex;
                     return true;
@@ -250,9 +264,7 @@ public class MultiChannel(Guid guid, ChannelMode mode, int channelCount) : IDisp
         while (StartingIndex != ReceivingIndex);
 
         Contract.Unused(out data);
-        index = 0;
-
-        // Contract.Unused(out index);
+        Contract.Unused(out index);
         return false;
     }
 
@@ -263,25 +275,28 @@ public class MultiChannel(Guid guid, ChannelMode mode, int channelCount) : IDisp
     /// <exception cref="InvalidOperationException">The channel is not open.</exception>
     public int GetFreeLength()
     {
-        if (SelectedAccessor is null || Mode == ChannelMode.Receive)
+        if (Mode == ChannelMode.Receive || SendingIndex < 0)
             throw new InvalidOperationException();
 
-        return CircularBufferHelper.GetFreeLength(SelectedAccessor, Capacity);
+        MemoryMappedViewAccessor Accessor = Contract.AssertNotNull(SelectedAccessor);
+
+        return CircularBufferHelper.GetFreeLength(Accessor, EffectiveCapacity);
     }
 
     /// <summary>
     /// Gets the number of free bytes in the specified channel.
-    /// This method requires <see cref="Mode"/> to be <see cref="ChannelMode.Receive"/>.
     /// </summary>
     /// <param name="index">The channel index.</param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is not a valid index.</exception>
     /// <exception cref="InvalidOperationException">The specified channel is not connected.</exception>
     public int GetFreeLength(int index)
     {
-        MemoryMappedViewAccessor? Accessor = DataAccessors[index];
-        if (Accessor is null || Mode != ChannelMode.Receive)
-            throw new InvalidOperationException();
+        if (index < 0 || index >= EffectiveChannelCount)
+            throw new ArgumentOutOfRangeException(nameof(index));
 
-        return CircularBufferHelper.GetFreeLength(Accessor, Capacity);
+        MemoryMappedViewAccessor Accessor = DataAccessors[index] ?? throw new InvalidOperationException();
+
+        return CircularBufferHelper.GetFreeLength(Accessor, EffectiveCapacity);
     }
 
     /// <summary>
@@ -291,29 +306,33 @@ public class MultiChannel(Guid guid, ChannelMode mode, int channelCount) : IDisp
     /// <exception cref="InvalidOperationException">The channel is not open.</exception>
     public int GetUsedLength()
     {
-        if (SelectedAccessor is null || Mode == ChannelMode.Receive)
+        if (Mode == ChannelMode.Receive || SendingIndex < 0)
             throw new InvalidOperationException();
 
-        return CircularBufferHelper.GetUsedLength(SelectedAccessor, Capacity);
+        MemoryMappedViewAccessor Accessor = Contract.AssertNotNull(SelectedAccessor);
+
+        return CircularBufferHelper.GetUsedLength(Accessor, EffectiveCapacity);
     }
 
     /// <summary>
     /// Gets the number of used bytes in the channel.
-    /// This method requires <see cref="Mode"/> to be <see cref="ChannelMode.Receive"/>.
     /// </summary>
     /// <param name="index">The channel index.</param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is not a valid index.</exception>
     /// <exception cref="InvalidOperationException">The specified channel is not connected.</exception>
     public int GetUsedLength(int index)
     {
-        MemoryMappedViewAccessor? Accessor = DataAccessors[index];
-        if (Accessor is null || Mode != ChannelMode.Receive)
-            throw new InvalidOperationException();
+        if (index < 0 || index >= EffectiveChannelCount)
+            throw new ArgumentOutOfRangeException(nameof(index));
 
-        return CircularBufferHelper.GetUsedLength(Accessor, Capacity);
+        MemoryMappedViewAccessor Accessor = DataAccessors[index] ?? throw new InvalidOperationException();
+
+        return CircularBufferHelper.GetUsedLength(Accessor, EffectiveCapacity);
     }
 
     /// <summary>
     /// Writes data to the channel.
+    /// This method requires <see cref="Mode"/> to be <see cref="ChannelMode.Send"/>.
     /// </summary>
     /// <param name="data">The data to write.</param>
     /// <exception cref="InvalidOperationException">The channel is not open.</exception>
@@ -326,29 +345,28 @@ public class MultiChannel(Guid guid, ChannelMode mode, int channelCount) : IDisp
             throw new ArgumentNullException(nameof(data));
 #endif
 
-        if (SelectedAccessor is null || Mode == ChannelMode.Receive)
+        if (Mode == ChannelMode.Receive || SendingIndex < 0)
             throw new InvalidOperationException();
 
-        CircularBufferHelper.Write(SelectedAccessor, Capacity, data);
+        MemoryMappedViewAccessor Accessor = Contract.AssertNotNull(SelectedAccessor);
+
+        CircularBufferHelper.Write(Accessor, EffectiveCapacity, data);
     }
 
     /// <summary>
     /// Gets channel stats for debug purpose.
+    /// This method requires <see cref="Mode"/> to be <see cref="ChannelMode.Send"/>.
     /// </summary>
     /// <param name="channelName">The channel name.</param>
     /// <exception cref="InvalidOperationException">The channel is not open.</exception>
     public string GetStats(string channelName)
     {
-        if (SelectedAccessor is null)
+        if (Mode == ChannelMode.Receive || SendingIndex < 0)
             throw new InvalidOperationException();
 
-        int EndOfBuffer = Capacity;
-        SelectedAccessor.Read(EndOfBuffer, out int Head);
-        SelectedAccessor.Read(EndOfBuffer + sizeof(int), out int Tail);
+        MemoryMappedViewAccessor Accessor = Contract.AssertNotNull(SelectedAccessor);
 
-        int FreeLength = CircularBufferHelper.GetFreeLength(Head, Tail, Capacity);
-        int UsedLength = CircularBufferHelper.GetUsedLength(Head, Tail, Capacity);
-        return $"{channelName} - Head:{Head} Tail:{Tail} Capacity:{Capacity} Free:{FreeLength} Used:{UsedLength}";
+        return GetStats(channelName, Accessor);
     }
 
     /// <summary>
@@ -356,20 +374,27 @@ public class MultiChannel(Guid guid, ChannelMode mode, int channelCount) : IDisp
     /// </summary>
     /// <param name="channelName">The channel name.</param>
     /// <param name="index">The channel index.</param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is not a valid index.</exception>
     /// <exception cref="InvalidOperationException">The channel is not connected.</exception>
     public string GetStats(string channelName, int index)
     {
-        MemoryMappedViewAccessor? Accessor = DataAccessors[index];
-        if (Accessor is null || Mode != ChannelMode.Receive)
-            throw new InvalidOperationException();
+        if (index < 0 || index >= EffectiveChannelCount)
+            throw new ArgumentOutOfRangeException(nameof(index));
 
-        int EndOfBuffer = Capacity;
-        Accessor.Read(EndOfBuffer, out int Head);
-        Accessor.Read(EndOfBuffer + sizeof(int), out int Tail);
+        MemoryMappedViewAccessor Accessor = DataAccessors[index] ?? throw new InvalidOperationException();
 
-        int FreeLength = CircularBufferHelper.GetFreeLength(Head, Tail, Capacity);
-        int UsedLength = CircularBufferHelper.GetUsedLength(Head, Tail, Capacity);
-        return $"{channelName} - Head:{Head} Tail:{Tail} Capacity:{Capacity} Free:{FreeLength} Used:{UsedLength}";
+        return GetStats(channelName, Accessor);
+    }
+
+    private string GetStats(string channelName, MemoryMappedViewAccessor accessor)
+    {
+        int EndOfBuffer = EffectiveCapacity;
+        accessor.Read(EndOfBuffer, out int Head);
+        accessor.Read(EndOfBuffer + sizeof(int), out int Tail);
+
+        int FreeLength = CircularBufferHelper.GetFreeLength(Head, Tail, EffectiveCapacity);
+        int UsedLength = CircularBufferHelper.GetUsedLength(Head, Tail, EffectiveCapacity);
+        return $"{channelName} - Head:{Head} Tail:{Tail} Capacity:{EffectiveCapacity} Free:{FreeLength} Used:{UsedLength}";
     }
 
     /// <summary>
@@ -418,12 +443,12 @@ public class MultiChannel(Guid guid, ChannelMode mode, int channelCount) : IDisp
     private string LockMapName => Guid.ToString("B");
     private string DataMapName(int index) => Guid.ToString("B") + "-" + index.ToString(CultureInfo.InvariantCulture);
 
+    private readonly int EffectiveCapacity = Capacity > 0 ? Capacity : 0x100;
     private MemoryMappedFile? LockFile;
     private MemoryMappedViewAccessor? LockAccessor;
     private readonly MemoryMappedFile?[] DataFiles = new MemoryMappedFile?[channelCount > 0 ? channelCount : 1];
     private readonly MemoryMappedViewAccessor?[] DataAccessors = new MemoryMappedViewAccessor?[channelCount > 0 ? channelCount : 1];
     private int SendingIndex = -1;
-    private MemoryMappedFile? SelectedFile => DataFiles[SendingIndex];
     private MemoryMappedViewAccessor? SelectedAccessor => DataAccessors[SendingIndex];
     private int ReceivingIndex;
     private bool DisposedValue;

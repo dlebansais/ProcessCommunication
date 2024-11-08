@@ -4,6 +4,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Threading.Tasks;
 using Contracts;
 
 /// <summary>
@@ -24,7 +25,7 @@ public static class Remote
     }
 
     /// <summary>
-    /// Launches a process and open a channel in send mode.
+    /// Launches a process and opens a channel in send mode.
     /// Because launching a process can take time, callers should retry repeatedly until success.
     /// After <see cref="Timeouts.ProcessLaunchTimeout"/> has elapsed this method will always return the same result until <see cref="Reset"/> is called.
     /// </summary>
@@ -54,9 +55,7 @@ public static class Remote
         }
 
         if (CreatedChannel is null)
-            SetChannel(new(guid, ChannelMode.Send));
-
-        CreatedChannel = Contract.AssertNotNull(CreatedChannel);
+            CreatedChannel = SetChannel(new Channel(guid, ChannelMode.Send));
 
         if (CreationStopwatch.Elapsed < Timeouts.ProcessLaunchTimeout)
             CreatedChannel.Open();
@@ -68,20 +67,178 @@ public static class Remote
     }
 
     /// <summary>
+    /// Asynchronously launches a process and opens a channel in send mode.
+    /// </summary>
+    /// <param name="pathToProcess">The process to launch.</param>
+    /// <param name="guid">The channel guid.</param>
+    /// <param name="arguments">Optional arguments.</param>
+    /// <param name="continueOnCapturedContext"><see langword="true"/> to attempt to marshal the continuation back to the original context captured; otherwise, <see langword="false"/>.</param>
+    /// <returns>The channel if successul; otherwise, <see langword="null"/>.</returns>
+    public static async Task<Channel?> LaunchAndOpenChannelAsync(string pathToProcess, Guid guid, string? arguments = null, bool continueOnCapturedContext = true)
+    {
+        Channel? Result = null;
+
+        CreationStopwatch.Start();
+
+        try
+        {
+            ProcessStartInfo ProcessStartInfo = new();
+            ProcessStartInfo.FileName = pathToProcess;
+            ProcessStartInfo.Arguments = arguments;
+            ProcessStartInfo.UseShellExecute = false;
+            ProcessStartInfo.WorkingDirectory = Path.GetDirectoryName(pathToProcess);
+
+            using Process? CreatedProcess = Process.Start(ProcessStartInfo);
+        }
+        catch
+        {
+            return null;
+        }
+
+        Channel? Channel;
+        Channel = new(guid, ChannelMode.Send);
+
+        while (CreationStopwatch.Elapsed < Timeouts.ProcessLaunchTimeout)
+        {
+            Channel.Open();
+
+            if (Channel.IsOpen)
+            {
+                Result = Channel;
+                Channel = null;
+                break;
+            }
+            else
+                await Task.Delay(100).ConfigureAwait(continueOnCapturedContext);
+        }
+
+        Channel?.Dispose();
+
+        return Result;
+    }
+
+    /// <summary>
+    /// Launches a process and opens a channel in send mode.
+    /// Because launching a process can take time, callers should retry repeatedly until success.
+    /// After <see cref="Timeouts.ProcessLaunchTimeout"/> has elapsed this method will always return the same result until <see cref="Reset"/> is called.
+    /// </summary>
+    /// <param name="pathToProcess">The process to launch.</param>
+    /// <param name="guid">The channel guid.</param>
+    /// <param name="channelCount">The channel count. If 0 or less, 1 is assumed.</param>
+    /// <param name="arguments">Optional arguments.</param>
+    /// <returns>The channel if successul; otherwise, <see langword="null"/>.</returns>
+    public static MultiChannel? LaunchAndOpenChannel(string pathToProcess, Guid guid, int channelCount, string? arguments = null)
+    {
+        if (!CreationStopwatch.IsRunning)
+        {
+            CreationStopwatch.Start();
+
+            try
+            {
+                ProcessStartInfo ProcessStartInfo = new();
+                ProcessStartInfo.FileName = pathToProcess;
+                ProcessStartInfo.Arguments = arguments;
+                ProcessStartInfo.UseShellExecute = false;
+                ProcessStartInfo.WorkingDirectory = Path.GetDirectoryName(pathToProcess);
+
+                using Process? CreatedProcess = Process.Start(ProcessStartInfo);
+            }
+            catch
+            {
+            }
+        }
+
+        if (CreatedMultiChannel is null)
+            CreatedMultiChannel = SetMultiChannel(new MultiChannel(guid, ChannelMode.Send, channelCount));
+
+        if (CreationStopwatch.Elapsed < Timeouts.ProcessLaunchTimeout)
+            CreatedMultiChannel.Open();
+
+        if (!CreatedMultiChannel.IsOpen)
+            return null;
+
+        return CreatedMultiChannel;
+    }
+
+    /// <summary>
+    /// Asynchronously launches a process and opens a channel in send mode.
+    /// </summary>
+    /// <param name="pathToProcess">The process to launch.</param>
+    /// <param name="guid">The channel guid.</param>
+    /// <param name="channelCount">The channel count. If 0 or less, 1 is assumed.</param>
+    /// <param name="arguments">Optional arguments.</param>
+    /// <param name="continueOnCapturedContext"><see langword="true"/> to attempt to marshal the continuation back to the original context captured; otherwise, <see langword="false"/>.</param>
+    /// <returns>The channel if successul; otherwise, <see langword="null"/>.</returns>
+    public static async Task<MultiChannel?> LaunchAndOpenChannelAsync(string pathToProcess, Guid guid, int channelCount, string? arguments = null, bool continueOnCapturedContext = true)
+    {
+        MultiChannel? Result = null;
+
+        CreationStopwatch.Start();
+
+        try
+        {
+            ProcessStartInfo ProcessStartInfo = new();
+            ProcessStartInfo.FileName = pathToProcess;
+            ProcessStartInfo.Arguments = arguments;
+            ProcessStartInfo.UseShellExecute = false;
+            ProcessStartInfo.WorkingDirectory = Path.GetDirectoryName(pathToProcess);
+
+            using Process? CreatedProcess = Process.Start(ProcessStartInfo);
+        }
+        catch
+        {
+            return null;
+        }
+
+        MultiChannel? Channel;
+        Channel = new(guid, ChannelMode.Send, channelCount);
+
+        while (CreationStopwatch.Elapsed < Timeouts.ProcessLaunchTimeout)
+        {
+            Channel.Open();
+
+            if (Channel.IsOpen)
+            {
+                Result = Channel;
+                Channel = null;
+                break;
+            }
+            else
+                await Task.Delay(100).ConfigureAwait(continueOnCapturedContext);
+        }
+
+        Channel?.Dispose();
+
+        return Result;
+    }
+
+    /// <summary>
     /// Resets the helper state.
     /// </summary>
     public static void Reset()
     {
         CreationStopwatch.Reset();
-        SetChannel(null);
+        _ = SetChannel(null);
+        _ = SetMultiChannel(null);
     }
 
-    private static void SetChannel(Channel? channel)
+    private static Channel SetChannel(Channel? channel)
     {
         CreatedChannel?.Dispose();
         CreatedChannel = channel;
+
+        return channel!;
+    }
+
+    private static MultiChannel SetMultiChannel(MultiChannel? channel)
+    {
+        CreatedMultiChannel?.Dispose();
+        CreatedMultiChannel = channel;
+
+        return channel!;
     }
 
     private static readonly Stopwatch CreationStopwatch = new();
     private static Channel? CreatedChannel;
+    private static MultiChannel? CreatedMultiChannel;
 }
