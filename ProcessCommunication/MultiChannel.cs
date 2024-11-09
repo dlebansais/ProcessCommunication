@@ -13,7 +13,7 @@ using Contracts;
 /// <param name="guid">The channel guid.</param>
 /// <param name="mode">The caller channel mode.</param>
 /// <param name="channelCount">The channel count. If 0 or less, 1 is assumed.</param>
-public class MultiChannel(Guid guid, ChannelMode mode, int channelCount) : IDisposable
+public class MultiChannel(Guid guid, ChannelMode mode, int channelCount) : IMultiChannel, IDisposable
 {
     /// <summary>
     /// Gets or sets the channel capacity.
@@ -78,7 +78,7 @@ public class MultiChannel(Guid guid, ChannelMode mode, int channelCount) : IDisp
                 MemoryMappedFile NewFile = MemoryMappedFile.CreateNew(ChannelName, CapacityWithHeadTail, MemoryMappedFileAccess.ReadWrite);
                 MemoryMappedViewAccessor NewAccessor = NewFile.CreateViewAccessor();
 
-                SetDataFileAndAccessor(i, NewFile, NewAccessor);
+                SetDataFileAndAccessor(i, NewFile, null, NewAccessor);
             }
             catch (Exception exception)
             {
@@ -115,7 +115,7 @@ public class MultiChannel(Guid guid, ChannelMode mode, int channelCount) : IDisp
     private void CloseReceivingDataChannels()
     {
         for (int i = 0; i < EffectiveChannelCount; i++)
-            SetDataFileAndAccessor(i, null, null);
+            SetDataFileAndAccessor(i, null, null, null);
     }
 
     private void CloseReceivingLockChannel()
@@ -153,6 +153,7 @@ public class MultiChannel(Guid guid, ChannelMode mode, int channelCount) : IDisp
             void* BasePointer = SafeMemoryPointer;
             const int Comparand = 0;
             const int Value = 1;
+            int FreeChannel = -1;
 
             for (int i = 0; i < EffectiveChannelCount; i++)
             {
@@ -160,29 +161,64 @@ public class MultiChannel(Guid guid, ChannelMode mode, int channelCount) : IDisp
                 ref int Location = ref Unsafe.AsRef<int>(Pointer);
                 int OriginalValue = Interlocked.CompareExchange(ref Location, Value, Comparand);
 
+                // Lock the channel for us. If we can't open it, at leats the next time we'll try another one.
+                // If we don't find any unlocked channel, but still succeed at opening one, it'll be unlocked on close.
                 if (OriginalValue == Comparand)
                 {
-                    try
-                    {
-                        string ChannelName = DataMapName(i);
-
-                        MemoryMappedFile NewFile = MemoryMappedFile.OpenExisting(ChannelName, MemoryMappedFileRights.ReadWrite);
-                        MemoryMappedViewAccessor NewAccessor = NewFile.CreateViewAccessor();
-
-                        SetDataFileAndAccessor(i, NewFile, NewAccessor);
-                        return true;
-                    }
-                    catch (Exception exception)
-                    {
-                        LastError = exception.Message;
-                        return false;
-                    }
+                    FreeChannel = i;
+                    break;
                 }
+            }
+
+            // Try to open all channels until we get a free one.
+            for (int i = 0; i < EffectiveChannelCount; i++)
+            {
+                // If there is a free channel, start from that one, otherwise start from 0.
+                int Index = FreeChannel >= 0 ? (FreeChannel + i) % EffectiveChannelCount : i;
+
+                if (TryOpenSendingDataChannel(Index))
+                    return true;
             }
 
             LastError = $"Out of slots (Tried {EffectiveChannelCount})";
             return false;
         }
+    }
+
+    private bool TryOpenSendingDataChannel(int index)
+    {
+        string ChannelName = DataMapName(index);
+        string MutexName = DataMutexName(index);
+
+        MemoryMappedFile? NewFile = null;
+        EventWaitHandle? NewSharingHandle = null;
+        MemoryMappedViewAccessor? NewAccessor = null;
+
+        try
+        {
+            NewSharingHandle = new(false, EventResetMode.ManualReset, MutexName, out bool CreatedNew);
+            if (CreatedNew)
+            {
+                NewFile = MemoryMappedFile.OpenExisting(ChannelName, MemoryMappedFileRights.ReadWrite);
+                NewAccessor = NewFile.CreateViewAccessor();
+                SetDataFileAndAccessor(index, NewFile, NewSharingHandle, NewAccessor);
+                return true;
+            }
+            else
+            {
+                NewSharingHandle.Dispose();
+                NewSharingHandle = null;
+            }
+        }
+        catch
+        {
+        }
+
+        // Cleanup of any handle still open.
+        SetDataFileAndAccessor(index, NewFile, NewSharingHandle, NewAccessor);
+        SetDataFileAndAccessor(index, null, null, null);
+
+        return false;
     }
 
     private void CloseSendingLockChannel()
@@ -206,7 +242,7 @@ public class MultiChannel(Guid guid, ChannelMode mode, int channelCount) : IDisp
             _ = Interlocked.Exchange(ref Location, Value);
         }
 
-        SetDataFileAndAccessor(SendingIndex, null, null);
+        SetDataFileAndAccessor(SendingIndex, null, null, null);
     }
 
     /// <summary>
@@ -361,6 +397,13 @@ public class MultiChannel(Guid guid, ChannelMode mode, int channelCount) : IDisp
     /// <exception cref="InvalidOperationException">The channel is not open.</exception>
     public string GetStats(string channelName)
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(channelName);
+#else
+        if (channelName is null)
+            throw new ArgumentNullException(nameof(channelName));
+#endif
+
         if (Mode == ChannelMode.Receive || SendingIndex < 0)
             throw new InvalidOperationException();
 
@@ -378,6 +421,13 @@ public class MultiChannel(Guid guid, ChannelMode mode, int channelCount) : IDisp
     /// <exception cref="InvalidOperationException">The channel is not connected.</exception>
     public string GetStats(string channelName, int index)
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(channelName);
+#else
+        if (channelName is null)
+            throw new ArgumentNullException(nameof(channelName));
+#endif
+
         if (index < 0 || index >= EffectiveChannelCount)
             throw new ArgumentOutOfRangeException(nameof(index));
 
@@ -426,27 +476,31 @@ public class MultiChannel(Guid guid, ChannelMode mode, int channelCount) : IDisp
         LockAccessor = accessor;
     }
 
-    private void SetDataFileAndAccessor(int index, MemoryMappedFile? file, MemoryMappedViewAccessor? accessor)
+    private void SetDataFileAndAccessor(int index, MemoryMappedFile? file, EventWaitHandle? sharingHandle, MemoryMappedViewAccessor? accessor)
     {
         Contract.Require(index >= 0);
         Contract.Require(index < EffectiveChannelCount);
 
         DataAccessors[index]?.Dispose();
+        DataSharingHandle[index]?.Dispose();
         DataFiles[index]?.Dispose();
 
         DataFiles[index] = file;
+        DataSharingHandle[index] = sharingHandle;
         DataAccessors[index] = accessor;
 
         SendingIndex = Mode == ChannelMode.Receive || accessor is null ? -1 : index;
     }
 
     private string LockMapName => Guid.ToString("B");
-    private string DataMapName(int index) => Guid.ToString("B") + "-" + index.ToString(CultureInfo.InvariantCulture);
+    private string DataMapName(int index) => Guid.ToString("B") + "-Channel" + index.ToString(CultureInfo.InvariantCulture);
+    private string DataMutexName(int index) => Guid.ToString("B") + "-Mutex" + index.ToString(CultureInfo.InvariantCulture);
 
     private readonly int EffectiveCapacity = Capacity > 0 ? Capacity : 0x100;
     private MemoryMappedFile? LockFile;
     private MemoryMappedViewAccessor? LockAccessor;
     private readonly MemoryMappedFile?[] DataFiles = new MemoryMappedFile?[channelCount > 0 ? channelCount : 1];
+    private readonly EventWaitHandle?[] DataSharingHandle = new EventWaitHandle?[channelCount > 0 ? channelCount : 1];
     private readonly MemoryMappedViewAccessor?[] DataAccessors = new MemoryMappedViewAccessor?[channelCount > 0 ? channelCount : 1];
     private int SendingIndex = -1;
     private MemoryMappedViewAccessor? SelectedAccessor => DataAccessors[SendingIndex];
@@ -454,7 +508,7 @@ public class MultiChannel(Guid guid, ChannelMode mode, int channelCount) : IDisp
     private bool DisposedValue;
 
     /// <summary>
-    /// Optiuonally disposes of the instance.
+    /// Optionally disposes of the instance.
     /// </summary>
     /// <param name="disposing">True if disposing must be done.</param>
     protected virtual void Dispose(bool disposing)

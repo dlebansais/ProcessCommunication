@@ -18,7 +18,7 @@ public class TestRemoteSingle
         Remote.Reset();
 
         string PathToProccess = Remote.GetSiblingFullPath("Foo.exe");
-        Channel? Channel;
+        IChannel? Channel;
 
         Stopwatch TestStopwatch = Stopwatch.StartNew();
 
@@ -38,7 +38,7 @@ public class TestRemoteSingle
         Remote.Reset();
 
         string PathToProccess = Remote.GetSiblingFullPath("Foo.exe");
-        Channel? Channel;
+        IChannel? Channel;
 
         Channel = await Remote.LaunchAndOpenChannelAsync(PathToProccess, TestChannel.TestGuid).ConfigureAwait(true);
         Assert.That(Channel, Is.Null);
@@ -52,7 +52,7 @@ public class TestRemoteSingle
         Remote.Reset();
 
         string PathToProccess = Remote.GetSiblingFullPath("TestProcess.exe");
-        Channel? Channel;
+        IChannel? Channel;
 
         Stopwatch TestStopwatch = Stopwatch.StartNew();
         TimeSpan ExitDelay = TimeSpan.FromSeconds(20);
@@ -77,7 +77,7 @@ public class TestRemoteSingle
         Remote.Reset();
 
         string PathToProccess = Remote.GetSiblingFullPath("TestProcess.exe");
-        Channel? Channel;
+        IChannel? Channel;
 
         TimeSpan ExitDelay = TimeSpan.FromSeconds(20);
 
@@ -106,7 +106,7 @@ public class TestRemoteSingle
         Remote.Reset();
 
         string PathToProccess = Remote.GetSiblingFullPath("TestProcess.exe");
-        Channel? Channel;
+        IChannel? Channel;
 
         TimeSpan ExitDelay = TimeSpan.FromSeconds(20);
 

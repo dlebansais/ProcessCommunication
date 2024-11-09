@@ -109,7 +109,7 @@ public class TestChannel
     }
 
     [Test]
-    public void TestMultipleOpen()
+    public void TestMultipleOpenReceiver()
     {
         using Channel TestReceiver1 = new(TestGuid, ChannelMode.Receive);
         using Channel TestReceiver2 = new(TestGuid, ChannelMode.Receive);
@@ -122,6 +122,25 @@ public class TestChannel
 
         Assert.That(TestReceiver2.IsOpen, Is.False);
         Assert.That(TestReceiver2.LastError, Is.Not.Empty);
+    }
+
+    [Test]
+    public void TestMultipleOpenSender()
+    {
+        using Channel TestReceiver = new(TestGuid, ChannelMode.Receive);
+        using Channel Sender1 = new(TestGuid, ChannelMode.Send);
+        using Channel Sender2 = new(TestGuid, ChannelMode.Send);
+
+        TestReceiver.Open();
+        Sender1.Open();
+        Sender2.Open();
+
+        Assert.That(TestReceiver.IsOpen, Is.True);
+        Assert.That(TestReceiver.LastError, Is.Empty);
+        Assert.That(Sender1.IsOpen, Is.True);
+        Assert.That(Sender1.LastError, Is.Empty);
+        Assert.That(Sender2.IsOpen, Is.False);
+        Assert.That(Sender2.LastError, Is.Not.Empty);
     }
 
     [Test]

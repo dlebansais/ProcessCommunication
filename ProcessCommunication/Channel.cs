@@ -2,6 +2,7 @@
 
 using System;
 using System.IO.MemoryMappedFiles;
+using System.Threading;
 using Contracts;
 
 /// <summary>
@@ -9,7 +10,7 @@ using Contracts;
 /// </summary>
 /// <param name="guid">The channel guid.</param>
 /// <param name="mode">The caller channel mode.</param>
-public class Channel(Guid guid, ChannelMode mode) : IDisposable
+public class Channel(Guid guid, ChannelMode mode) : IChannel, IDisposable
 {
     /// <summary>
     /// Gets a shared guid from client to server.
@@ -21,19 +22,13 @@ public class Channel(Guid guid, ChannelMode mode) : IDisposable
     /// </summary>
     public static int Capacity { get; set; } = 0x100000;
 
-    /// <summary>
-    /// Gets the channel guid.
-    /// </summary>
+    /// <inheritdoc cref="IChannel.Guid" />
     public Guid Guid { get; } = guid;
 
-    /// <summary>
-    /// Gets the caller channel mode.
-    /// </summary>
+    /// <inheritdoc cref="IChannel.Mode" />
     public ChannelMode Mode { get; } = mode;
 
-    /// <summary>
-    /// Opens the channel.
-    /// </summary>
+    /// <inheritdoc cref="IChannel.Open" />
     public void Open()
     {
         if (IsOpen)
@@ -42,44 +37,58 @@ public class Channel(Guid guid, ChannelMode mode) : IDisposable
         Contract.Assert(Accessor is null);
         Contract.Assert(File is null);
 
+        MemoryMappedFile? NewFile = null;
+        EventWaitHandle? NewSharingHandle = null;
+        MemoryMappedViewAccessor? NewAccessor = null;
+
         try
         {
             int CapacityWithHeadTail = EffectiveCapacity + (sizeof(int) * 2);
-            string ChannelName = Guid.ToString("B");
+            string ChannelName = Guid.ToString("B") + "-Channel";
+            string MutexName = Guid.ToString("B") + "-Mutex";
 
-            MemoryMappedFile NewFile = Mode switch
+            if (Mode == ChannelMode.Receive)
             {
-                ChannelMode.Receive => MemoryMappedFile.CreateNew(ChannelName, CapacityWithHeadTail, MemoryMappedFileAccess.ReadWrite),
-                ChannelMode.Send or _ => MemoryMappedFile.OpenExisting(ChannelName, MemoryMappedFileRights.ReadWrite),
-            };
-
-            MemoryMappedViewAccessor NewAccessor = NewFile.CreateViewAccessor();
-
-            SetFileAndAccessor(NewFile, NewAccessor);
+                NewFile = MemoryMappedFile.CreateNew(ChannelName, CapacityWithHeadTail, MemoryMappedFileAccess.ReadWrite);
+                NewAccessor = NewFile.CreateViewAccessor();
+                SetFileAndAccessor(NewFile, null, NewAccessor);
+                return;
+            }
+            else
+            {
+                NewSharingHandle = new(false, EventResetMode.ManualReset, MutexName, out bool CreatedNew);
+                if (CreatedNew)
+                {
+                    NewFile = MemoryMappedFile.OpenExisting(ChannelName, MemoryMappedFileRights.ReadWrite);
+                    NewAccessor = NewFile.CreateViewAccessor();
+                    SetFileAndAccessor(NewFile, NewSharingHandle, NewAccessor);
+                    return;
+                }
+                else
+                {
+                    LastError = "Channel already opened";
+                    NewSharingHandle.Dispose();
+                    NewSharingHandle = null;
+                }
+            }
         }
         catch (Exception exception)
         {
             LastError = exception.Message;
         }
+
+        // Cleanup of any handle still open.
+        SetFileAndAccessor(NewFile, NewSharingHandle, NewAccessor);
+        SetFileAndAccessor(null, null, null);
     }
 
-    /// <summary>
-    /// Gets a value indicating whether the channel is open.
-    /// </summary>
-    public bool IsOpen { get => Accessor is not null; }
+    /// <inheritdoc cref="IChannel.IsOpen" />
+    public bool IsOpen => Accessor is not null;
 
-    /// <summary>
-    /// Gets the last error.
-    /// </summary>
+    /// <inheritdoc cref="IChannel.LastError" />
     public string LastError { get; private set; } = string.Empty;
 
-    /// <summary>
-    /// Reads data from the channel.
-    /// This method requires <see cref="Mode"/> to be <see cref="ChannelMode.Receive"/>.
-    /// </summary>
-    /// <param name="data">The data read upon return if successful.</param>
-    /// <returns><see langword="true"/> data has been read; otherwise, <see langword="false"/>.</returns>
-    /// <exception cref="InvalidOperationException">The channel is not open.</exception>
+    /// <inheritdoc cref="IChannel.TryRead" />
     public bool TryRead(out byte[] data)
     {
         if (Mode != ChannelMode.Receive || Accessor is null)
@@ -88,10 +97,7 @@ public class Channel(Guid guid, ChannelMode mode) : IDisposable
         return CircularBufferHelper.Read(Accessor, EffectiveCapacity, out data);
     }
 
-    /// <summary>
-    /// Gets the number of free bytes in the channel.
-    /// </summary>
-    /// <exception cref="InvalidOperationException">The channel is not open.</exception>
+    /// <inheritdoc cref="IChannel.GetFreeLength" />
     public int GetFreeLength()
     {
         if (Accessor is null)
@@ -100,10 +106,7 @@ public class Channel(Guid guid, ChannelMode mode) : IDisposable
         return CircularBufferHelper.GetFreeLength(Accessor, EffectiveCapacity);
     }
 
-    /// <summary>
-    /// Gets the number of used bytes in the channel.
-    /// </summary>
-    /// <exception cref="InvalidOperationException">The channel is not open.</exception>
+    /// <inheritdoc cref="IChannel.GetUsedLength" />
     public int GetUsedLength()
     {
         if (Accessor is null)
@@ -112,13 +115,7 @@ public class Channel(Guid guid, ChannelMode mode) : IDisposable
         return CircularBufferHelper.GetUsedLength(Accessor, EffectiveCapacity);
     }
 
-    /// <summary>
-    /// Writes data to the channel.
-    /// This method requires <see cref="Mode"/> to be <see cref="ChannelMode.Send"/>.
-    /// </summary>
-    /// <param name="data">The data to write.</param>
-    /// <exception cref="ArgumentNullException"><paramref name="data"/> is <see langword="null"/>.</exception>
-    /// <exception cref="InvalidOperationException">The channel is not open.</exception>
+    /// <inheritdoc cref="IChannel.Write" />
     public void Write(byte[] data)
     {
 #if NET8_0_OR_GREATER
@@ -134,13 +131,16 @@ public class Channel(Guid guid, ChannelMode mode) : IDisposable
         CircularBufferHelper.Write(Accessor, EffectiveCapacity, data);
     }
 
-    /// <summary>
-    /// Gets channel stats for debug purpose.
-    /// </summary>
-    /// <param name="channelName">The channel name.</param>
-    /// <exception cref="InvalidOperationException">The channel is not open.</exception>
+    /// <inheritdoc cref="IChannel.GetStats" />
     public string GetStats(string channelName)
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(channelName);
+#else
+        if (channelName is null)
+            throw new ArgumentNullException(nameof(channelName));
+#endif
+
         if (Accessor is null)
             throw new InvalidOperationException();
 
@@ -153,34 +153,34 @@ public class Channel(Guid guid, ChannelMode mode) : IDisposable
         return $"{channelName} - Head:{Head} Tail:{Tail} Capacity:{EffectiveCapacity} Free:{FreeLength} Used:{UsedLength}";
     }
 
-    /// <summary>
-    /// Closes the channel.
-    /// </summary>
-    /// <exception cref="InvalidOperationException">The channel is not open.</exception>
+    /// <inheritdoc cref="IChannel.Close" />
     public void Close()
     {
         if (!IsOpen)
             return;
 
-        SetFileAndAccessor(null, null);
+        SetFileAndAccessor(null, null, null);
     }
 
-    private void SetFileAndAccessor(MemoryMappedFile? file, MemoryMappedViewAccessor? accessor)
+    private void SetFileAndAccessor(MemoryMappedFile? file, EventWaitHandle? sharingHandle, MemoryMappedViewAccessor? accessor)
     {
         Accessor?.Dispose();
+        SharingHandle?.Dispose();
         File?.Dispose();
 
         File = file;
+        SharingHandle = sharingHandle;
         Accessor = accessor;
     }
 
     private readonly int EffectiveCapacity = Capacity > 0 ? Capacity : 0x100;
     private MemoryMappedFile? File;
+    private EventWaitHandle? SharingHandle;
     private MemoryMappedViewAccessor? Accessor;
     private bool DisposedValue;
 
     /// <summary>
-    /// Optiuonally disposes of the instance.
+    /// Optionally disposes of the instance.
     /// </summary>
     /// <param name="disposing">True if disposing must be done.</param>
     protected virtual void Dispose(bool disposing)
@@ -196,7 +196,7 @@ public class Channel(Guid guid, ChannelMode mode) : IDisposable
         }
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public void Dispose()
     {
         Dispose(disposing: true);

@@ -314,17 +314,20 @@ public class TestMultiChannel
     [Test]
     public void TestMultipleOpen2()
     {
-        using Channel TestReceiver1 = new(TestGuid, ChannelMode.Receive);
-        using MultiChannel TestReceiver2 = new(TestGuid, ChannelMode.Receive, 1);
+        using MultiChannel TestReceiver = new(TestGuid, ChannelMode.Receive, 1);
+        using MultiChannel TestSender1 = new(TestGuid, ChannelMode.Send, 1);
+        using MultiChannel TestSender2 = new(TestGuid, ChannelMode.Send, 1);
 
-        TestReceiver1.Open();
-        TestReceiver2.Open();
+        TestReceiver.Open();
+        TestSender1.Open();
+        TestSender2.Open();
 
-        Assert.That(TestReceiver1.IsOpen, Is.True);
-        Assert.That(TestReceiver1.LastError, Is.Empty);
-
-        Assert.That(TestReceiver2.IsOpen, Is.False);
-        Assert.That(TestReceiver2.LastError, Is.Not.Empty);
+        Assert.That(TestReceiver.IsOpen, Is.True);
+        Assert.That(TestReceiver.LastError, Is.Empty);
+        Assert.That(TestSender1.IsOpen, Is.True);
+        Assert.That(TestSender1.LastError, Is.Empty);
+        Assert.That(TestSender2.IsOpen, Is.False);
+        Assert.That(TestSender2.LastError, Is.Not.Empty);
     }
 
     [Test]
