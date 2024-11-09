@@ -117,5 +117,22 @@ public class TestRemoteMulti
 
         await Task.Delay(ExitDelay + TimeSpan.FromSeconds(5)).ConfigureAwait(true);
     }
+
+    [Test]
+    [NonParallelizable]
+    public async Task TestAsyncInvalidType()
+    {
+        Remote.Reset();
+
+        string PathToProccess = Remote.GetSiblingFullPath("TestProcess.exe");
+        IMultiChannel? Channel;
+
+        TimeSpan ExitDelay = TimeSpan.FromSeconds(20);
+
+        Channel = await Remote.LaunchAndOpenChannelAsync(PathToProccess, TestChannel.TestGuid, 1, $"false 1 {ExitDelay.TotalSeconds.ToString(CultureInfo.InvariantCulture)}").ConfigureAwait(true);
+        Assert.That(Channel, Is.Null);
+
+        await Task.Delay(ExitDelay + TimeSpan.FromSeconds(5)).ConfigureAwait(true);
+    }
 #endif
 }

@@ -170,6 +170,8 @@ public class TestChannel
         Assert.That(TestReceiver, Is.Not.Null);
         Assert.That(TestSender, Is.Not.Null);
 
+        _ = Assert.Throws<InvalidOperationException>(() => TestReceiver.TryRead(out _));
+
         TestReceiver.Open();
         TestSender.Open();
 
@@ -184,6 +186,7 @@ public class TestChannel
         TestReceiver.Close();
 
         _ = Assert.Throws<InvalidOperationException>(() => TestReceiver.TryRead(out _));
+        _ = Assert.Throws<InvalidOperationException>(() => TestSender.TryRead(out _));
 
         TestSender.Close();
 
@@ -196,11 +199,16 @@ public class TestChannel
     [Test]
     public void TestWriteError()
     {
+        const byte[] NullData = null!;
+        byte[] DataSent = [0, 1, 2, 3, 4, 5];
+
         using Channel TestReceiver = new(TestGuid, ChannelMode.Receive);
         using Channel TestSender = new(TestGuid, ChannelMode.Send);
 
         Assert.That(TestReceiver, Is.Not.Null);
         Assert.That(TestSender, Is.Not.Null);
+
+        _ = Assert.Throws<ArgumentNullException>(() => TestSender.Write(NullData));
 
         TestReceiver.Open();
         TestSender.Open();
@@ -210,9 +218,7 @@ public class TestChannel
         Assert.That(TestReceiver.LastError, Is.Empty);
         Assert.That(TestSender.LastError, Is.Empty);
 
-        const byte[] NullData = null!;
-        byte[] DataSent = [0, 1, 2, 3, 4, 5];
-
+        _ = Assert.Throws<InvalidOperationException>(() => TestReceiver.Write(DataSent));
         _ = Assert.Throws<ArgumentNullException>(() => TestSender.Write(NullData));
 
         TestSender.Close();
@@ -230,6 +236,8 @@ public class TestChannel
     [Test]
     public void TestGetLengthError()
     {
+        const string NullName = null!;
+
         using Channel TestReceiver = new(TestGuid, ChannelMode.Receive);
         using Channel TestSender = new(TestGuid, ChannelMode.Send);
 
@@ -252,6 +260,7 @@ public class TestChannel
         Assert.That(TestReceiver.LastError, Is.Empty);
         Assert.That(TestSender.LastError, Is.Empty);
 
+        _ = Assert.Throws<ArgumentNullException>(() => TestReceiver.GetStats(NullName));
         _ = Assert.Throws<InvalidOperationException>(() => TestReceiver.GetFreeLength());
         _ = Assert.Throws<InvalidOperationException>(() => TestReceiver.GetUsedLength());
         _ = Assert.Throws<InvalidOperationException>(() => TestReceiver.GetStats(string.Empty));
@@ -464,38 +473,59 @@ public class TestChannel
     [Test]
     public void TestCapacity()
     {
-        using Channel TestReceiver = new(TestGuid, ChannelMode.Receive);
-        using Channel TestSender = new(TestGuid, ChannelMode.Send);
+        using Channel TestReceiver1 = new(TestGuid, ChannelMode.Receive);
+        using Channel TestSender1 = new(TestGuid, ChannelMode.Send);
 
-        Assert.That(TestReceiver, Is.Not.Null);
-        Assert.That(TestSender, Is.Not.Null);
+        Assert.That(TestReceiver1, Is.Not.Null);
+        Assert.That(TestSender1, Is.Not.Null);
 
-        TestReceiver.Open();
-        TestSender.Open();
+        TestReceiver1.Open();
+        TestSender1.Open();
 
-        Assert.That(TestReceiver.IsOpen, Is.True);
-        Assert.That(TestSender.IsOpen, Is.True);
-        Assert.That(TestReceiver.LastError, Is.Empty);
-        Assert.That(TestSender.LastError, Is.Empty);
+        Assert.That(TestReceiver1.IsOpen, Is.True);
+        Assert.That(TestSender1.IsOpen, Is.True);
+        Assert.That(TestReceiver1.LastError, Is.Empty);
+        Assert.That(TestSender1.LastError, Is.Empty);
 
         int OldCapacity = Channel.Capacity;
 
         Assert.That(OldCapacity, Is.GreaterThan(0));
 
-        Channel.Capacity = OldCapacity * 2;
+        Channel.Capacity = -1;
 
-        Assert.That(TestReceiver.GetFreeLength(), Is.EqualTo(OldCapacity - 1));
-        Assert.That(TestReceiver.GetUsedLength(), Is.EqualTo(0));
-        Assert.That(TestSender.GetFreeLength(), Is.EqualTo(OldCapacity - 1));
-        Assert.That(TestSender.GetUsedLength(), Is.EqualTo(0));
+        Assert.That(TestReceiver1.GetFreeLength(), Is.EqualTo(OldCapacity - 1));
+        Assert.That(TestReceiver1.GetUsedLength(), Is.EqualTo(0));
+        Assert.That(TestSender1.GetFreeLength(), Is.EqualTo(OldCapacity - 1));
+        Assert.That(TestSender1.GetUsedLength(), Is.EqualTo(0));
 
-        TestReceiver.Close();
-        TestSender.Close();
+        TestReceiver1.Close();
+        TestSender1.Close();
 
-        Assert.That(TestReceiver.IsOpen, Is.False);
-        Assert.That(TestSender.IsOpen, Is.False);
-        Assert.That(TestReceiver.LastError, Is.Empty);
-        Assert.That(TestSender.LastError, Is.Empty);
+        Assert.That(TestReceiver1.IsOpen, Is.False);
+        Assert.That(TestSender1.IsOpen, Is.False);
+        Assert.That(TestReceiver1.LastError, Is.Empty);
+        Assert.That(TestSender1.LastError, Is.Empty);
+
+        using Channel TestReceiver2 = new(TestGuid, ChannelMode.Receive);
+        using Channel TestSender2 = new(TestGuid, ChannelMode.Send);
+
+        Assert.That(TestReceiver2, Is.Not.Null);
+        Assert.That(TestSender2, Is.Not.Null);
+
+        TestReceiver2.Open();
+        TestSender2.Open();
+
+        Assert.That(TestReceiver2.IsOpen, Is.True);
+        Assert.That(TestSender2.IsOpen, Is.True);
+        Assert.That(TestReceiver2.LastError, Is.Empty);
+        Assert.That(TestSender2.LastError, Is.Empty);
+
+        Assert.That(TestReceiver2.GetFreeLength(), Is.GreaterThan(0));
+        Assert.That(TestReceiver2.GetFreeLength(), Is.LessThan(OldCapacity));
+        Assert.That(TestReceiver2.GetUsedLength(), Is.EqualTo(0));
+        Assert.That(TestSender2.GetFreeLength(), Is.GreaterThan(0));
+        Assert.That(TestSender2.GetFreeLength(), Is.LessThan(OldCapacity));
+        Assert.That(TestSender2.GetUsedLength(), Is.EqualTo(0));
 
         Channel.Capacity = OldCapacity;
     }
