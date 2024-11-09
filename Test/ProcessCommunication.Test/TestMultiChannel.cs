@@ -107,10 +107,10 @@ public class TestMultiChannel
     [Test]
     public void TestReadWriteSeveralChannels()
     {
-        using MultiChannel TestReceiver = new(TestGuid, ChannelMode.Receive, 3);
-        using MultiChannel TestSender1 = new(TestGuid, ChannelMode.Send, 3);
-        using MultiChannel TestSender2 = new(TestGuid, ChannelMode.Send, 3);
-        using MultiChannel TestSender3 = new(TestGuid, ChannelMode.Send, 3);
+        using MultiChannel TestReceiver = new(TestGuid, ChannelMode.Receive, 4);
+        using MultiChannel TestSender1 = new(TestGuid, ChannelMode.Send, 4);
+        using MultiChannel TestSender2 = new(TestGuid, ChannelMode.Send, 4);
+        using MultiChannel TestSender3 = new(TestGuid, ChannelMode.Send, 4);
 
         Assert.That(TestReceiver, Is.Not.Null);
         Assert.That(TestSender1, Is.Not.Null);
@@ -165,12 +165,39 @@ public class TestMultiChannel
         Assert.That(IsDataReceived, Is.True);
         Assert.That(DataReceived, Is.Not.Null);
         Assert.That(DataReceived, Is.EqualTo(DataSent));
+        Assert.That(Index, Is.EqualTo(0));
+
+        Assert.That(TestSender1.GetFreeLength(), Is.EqualTo(MultiChannel.Capacity - 1));
+        Assert.That(TestSender1.GetUsedLength(), Is.EqualTo(0));
+        Assert.That(TestSender1.GetFreeLength(0), Is.EqualTo(MultiChannel.Capacity - 1));
+        Assert.That(TestSender1.GetUsedLength(0), Is.EqualTo(0));
+        Assert.That(TestSender2.GetFreeLength(), Is.EqualTo(MultiChannel.Capacity - 1 - DataSent.Length));
+        Assert.That(TestSender2.GetUsedLength(), Is.EqualTo(DataSent.Length));
+        Assert.That(TestSender2.GetFreeLength(1), Is.EqualTo(MultiChannel.Capacity - 1 - DataSent.Length));
+        Assert.That(TestSender2.GetUsedLength(1), Is.EqualTo(DataSent.Length));
+        Assert.That(TestSender3.GetFreeLength(), Is.EqualTo(MultiChannel.Capacity - 1 - DataSent.Length));
+        Assert.That(TestSender3.GetUsedLength(), Is.EqualTo(DataSent.Length));
+        Assert.That(TestSender3.GetFreeLength(2), Is.EqualTo(MultiChannel.Capacity - 1 - DataSent.Length));
+        Assert.That(TestSender3.GetUsedLength(2), Is.EqualTo(DataSent.Length));
+
+        Assert.That(TestReceiver.GetFreeLength(0), Is.EqualTo(MultiChannel.Capacity - 1));
+        Assert.That(TestReceiver.GetUsedLength(0), Is.EqualTo(0));
+        Assert.That(TestReceiver.GetFreeLength(1), Is.EqualTo(MultiChannel.Capacity - 1 - DataSent.Length));
+        Assert.That(TestReceiver.GetUsedLength(1), Is.EqualTo(DataSent.Length));
+        Assert.That(TestReceiver.GetFreeLength(2), Is.EqualTo(MultiChannel.Capacity - 1 - DataSent.Length));
+        Assert.That(TestReceiver.GetUsedLength(2), Is.EqualTo(DataSent.Length));
+
+        IsDataReceived = TestReceiver.TryRead(out DataReceived, out Index);
+
+        Assert.That(IsDataReceived, Is.True);
+        Assert.That(DataReceived, Is.Not.Null);
+        Assert.That(DataReceived, Is.EqualTo(DataSent));
         Assert.That(Index, Is.EqualTo(1));
 
-        Assert.That(TestSender1.GetFreeLength(), Is.EqualTo(MultiChannel.Capacity - 1 - DataSent.Length));
-        Assert.That(TestSender1.GetUsedLength(), Is.EqualTo(DataSent.Length));
-        Assert.That(TestSender1.GetFreeLength(0), Is.EqualTo(MultiChannel.Capacity - 1 - DataSent.Length));
-        Assert.That(TestSender1.GetUsedLength(0), Is.EqualTo(DataSent.Length));
+        Assert.That(TestSender1.GetFreeLength(), Is.EqualTo(MultiChannel.Capacity - 1));
+        Assert.That(TestSender1.GetUsedLength(), Is.EqualTo(0));
+        Assert.That(TestSender1.GetFreeLength(0), Is.EqualTo(MultiChannel.Capacity - 1));
+        Assert.That(TestSender1.GetUsedLength(0), Is.EqualTo(0));
         Assert.That(TestSender2.GetFreeLength(), Is.EqualTo(MultiChannel.Capacity - 1));
         Assert.That(TestSender2.GetUsedLength(), Is.EqualTo(0));
         Assert.That(TestSender2.GetFreeLength(1), Is.EqualTo(MultiChannel.Capacity - 1));
@@ -180,8 +207,8 @@ public class TestMultiChannel
         Assert.That(TestSender3.GetFreeLength(2), Is.EqualTo(MultiChannel.Capacity - 1 - DataSent.Length));
         Assert.That(TestSender3.GetUsedLength(2), Is.EqualTo(DataSent.Length));
 
-        Assert.That(TestReceiver.GetFreeLength(0), Is.EqualTo(MultiChannel.Capacity - 1 - DataSent.Length));
-        Assert.That(TestReceiver.GetUsedLength(0), Is.EqualTo(DataSent.Length));
+        Assert.That(TestReceiver.GetFreeLength(0), Is.EqualTo(MultiChannel.Capacity - 1));
+        Assert.That(TestReceiver.GetUsedLength(0), Is.EqualTo(0));
         Assert.That(TestReceiver.GetFreeLength(1), Is.EqualTo(MultiChannel.Capacity - 1));
         Assert.That(TestReceiver.GetUsedLength(1), Is.EqualTo(0));
         Assert.That(TestReceiver.GetFreeLength(2), Is.EqualTo(MultiChannel.Capacity - 1 - DataSent.Length));
@@ -193,33 +220,6 @@ public class TestMultiChannel
         Assert.That(DataReceived, Is.Not.Null);
         Assert.That(DataReceived, Is.EqualTo(DataSent));
         Assert.That(Index, Is.EqualTo(2));
-
-        Assert.That(TestSender1.GetFreeLength(), Is.EqualTo(MultiChannel.Capacity - 1 - DataSent.Length));
-        Assert.That(TestSender1.GetUsedLength(), Is.EqualTo(DataSent.Length));
-        Assert.That(TestSender1.GetFreeLength(0), Is.EqualTo(MultiChannel.Capacity - 1 - DataSent.Length));
-        Assert.That(TestSender1.GetUsedLength(0), Is.EqualTo(DataSent.Length));
-        Assert.That(TestSender2.GetFreeLength(), Is.EqualTo(MultiChannel.Capacity - 1));
-        Assert.That(TestSender2.GetUsedLength(), Is.EqualTo(0));
-        Assert.That(TestSender2.GetFreeLength(1), Is.EqualTo(MultiChannel.Capacity - 1));
-        Assert.That(TestSender2.GetUsedLength(1), Is.EqualTo(0));
-        Assert.That(TestSender3.GetFreeLength(), Is.EqualTo(MultiChannel.Capacity - 1));
-        Assert.That(TestSender3.GetUsedLength(), Is.EqualTo(0));
-        Assert.That(TestSender3.GetFreeLength(2), Is.EqualTo(MultiChannel.Capacity - 1));
-        Assert.That(TestSender3.GetUsedLength(2), Is.EqualTo(0));
-
-        Assert.That(TestReceiver.GetFreeLength(0), Is.EqualTo(MultiChannel.Capacity - 1 - DataSent.Length));
-        Assert.That(TestReceiver.GetUsedLength(0), Is.EqualTo(DataSent.Length));
-        Assert.That(TestReceiver.GetFreeLength(1), Is.EqualTo(MultiChannel.Capacity - 1));
-        Assert.That(TestReceiver.GetUsedLength(1), Is.EqualTo(0));
-        Assert.That(TestReceiver.GetFreeLength(2), Is.EqualTo(MultiChannel.Capacity - 1));
-        Assert.That(TestReceiver.GetUsedLength(2), Is.EqualTo(0));
-
-        IsDataReceived = TestReceiver.TryRead(out DataReceived, out Index);
-
-        Assert.That(IsDataReceived, Is.True);
-        Assert.That(DataReceived, Is.Not.Null);
-        Assert.That(DataReceived, Is.EqualTo(DataSent));
-        Assert.That(Index, Is.EqualTo(0));
 
         Assert.That(TestSender1.GetFreeLength(), Is.EqualTo(MultiChannel.Capacity - 1));
         Assert.That(TestSender1.GetUsedLength(), Is.EqualTo(0));
@@ -240,6 +240,9 @@ public class TestMultiChannel
         Assert.That(TestReceiver.GetUsedLength(1), Is.EqualTo(0));
         Assert.That(TestReceiver.GetFreeLength(2), Is.EqualTo(MultiChannel.Capacity - 1));
         Assert.That(TestReceiver.GetUsedLength(2), Is.EqualTo(0));
+
+        IsDataReceived = TestReceiver.TryRead(out _, out _);
+        Assert.That(IsDataReceived, Is.False);
     }
 
     [Test]
@@ -386,11 +389,16 @@ public class TestMultiChannel
     [Test]
     public void TestWriteError()
     {
+        const byte[] NullData = null!;
+        byte[] DataSent = [0, 1, 2, 3, 4, 5];
+
         using MultiChannel TestReceiver = new(TestGuid, ChannelMode.Receive, 1);
         using MultiChannel TestSender = new(TestGuid, ChannelMode.Send, 1);
 
         Assert.That(TestReceiver, Is.Not.Null);
         Assert.That(TestSender, Is.Not.Null);
+
+        _ = Assert.Throws<ArgumentNullException>(() => TestSender.Write(NullData));
 
         TestReceiver.Open();
         TestSender.Open();
@@ -400,10 +408,8 @@ public class TestMultiChannel
         Assert.That(TestReceiver.LastError, Is.Empty);
         Assert.That(TestSender.LastError, Is.Empty);
 
-        const byte[] NullData = null!;
-        byte[] DataSent = [0, 1, 2, 3, 4, 5];
-
         _ = Assert.Throws<ArgumentNullException>(() => TestSender.Write(NullData));
+        _ = Assert.Throws<InvalidOperationException>(() => TestReceiver.Write(DataSent));
 
         TestSender.Close();
 
@@ -427,9 +433,13 @@ public class TestMultiChannel
         Assert.That(TestSender, Is.Not.Null);
 
         _ = Assert.Throws<InvalidOperationException>(() => TestReceiver.GetFreeLength());
+        _ = Assert.Throws<InvalidOperationException>(() => TestReceiver.GetFreeLength(0));
         _ = Assert.Throws<InvalidOperationException>(() => TestReceiver.GetUsedLength());
+        _ = Assert.Throws<InvalidOperationException>(() => TestReceiver.GetUsedLength(0));
         _ = Assert.Throws<InvalidOperationException>(() => TestSender.GetFreeLength());
+        _ = Assert.Throws<InvalidOperationException>(() => TestSender.GetFreeLength(0));
         _ = Assert.Throws<InvalidOperationException>(() => TestSender.GetUsedLength());
+        _ = Assert.Throws<InvalidOperationException>(() => TestSender.GetUsedLength(0));
 
         TestReceiver.Open();
         TestSender.Open();
@@ -661,42 +671,67 @@ public class TestMultiChannel
     [Test]
     public void TestCapacity()
     {
-        using MultiChannel TestReceiver = new(TestGuid, ChannelMode.Receive, 1);
-        using MultiChannel TestSender = new(TestGuid, ChannelMode.Send, 1);
+        using MultiChannel TestReceiver1 = new(TestGuid, ChannelMode.Receive, 1);
+        using MultiChannel TestSender1 = new(TestGuid, ChannelMode.Send, 1);
 
-        Assert.That(TestReceiver, Is.Not.Null);
-        Assert.That(TestSender, Is.Not.Null);
+        Assert.That(TestReceiver1, Is.Not.Null);
+        Assert.That(TestSender1, Is.Not.Null);
 
-        TestReceiver.Open();
-        TestSender.Open();
+        TestReceiver1.Open();
+        TestSender1.Open();
 
-        Assert.That(TestReceiver.IsOpen, Is.True);
-        Assert.That(TestSender.IsOpen, Is.True);
-        Assert.That(TestReceiver.LastError, Is.Empty);
-        Assert.That(TestSender.LastError, Is.Empty);
+        Assert.That(TestReceiver1.IsOpen, Is.True);
+        Assert.That(TestSender1.IsOpen, Is.True);
+        Assert.That(TestReceiver1.LastError, Is.Empty);
+        Assert.That(TestSender1.LastError, Is.Empty);
 
-        int OldCapacity = Channel.Capacity;
+        int OldCapacity = MultiChannel.Capacity;
 
         Assert.That(OldCapacity, Is.GreaterThan(0));
 
-        Channel.Capacity = OldCapacity * 2;
+        MultiChannel.Capacity = -1;
 
-        Assert.That(TestReceiver.GetFreeLength(0), Is.EqualTo(OldCapacity - 1));
-        Assert.That(TestReceiver.GetUsedLength(0), Is.EqualTo(0));
-        Assert.That(TestSender.GetFreeLength(), Is.EqualTo(OldCapacity - 1));
-        Assert.That(TestSender.GetUsedLength(), Is.EqualTo(0));
-        Assert.That(TestSender.GetFreeLength(0), Is.EqualTo(OldCapacity - 1));
-        Assert.That(TestSender.GetUsedLength(0), Is.EqualTo(0));
+        Assert.That(TestReceiver1.GetFreeLength(0), Is.EqualTo(OldCapacity - 1));
+        Assert.That(TestReceiver1.GetUsedLength(0), Is.EqualTo(0));
+        Assert.That(TestSender1.GetFreeLength(), Is.EqualTo(OldCapacity - 1));
+        Assert.That(TestSender1.GetUsedLength(), Is.EqualTo(0));
+        Assert.That(TestSender1.GetFreeLength(0), Is.EqualTo(OldCapacity - 1));
+        Assert.That(TestSender1.GetUsedLength(0), Is.EqualTo(0));
 
-        TestReceiver.Close();
-        TestSender.Close();
+        TestReceiver1.Close();
+        TestSender1.Close();
 
-        Assert.That(TestReceiver.IsOpen, Is.False);
-        Assert.That(TestSender.IsOpen, Is.False);
-        Assert.That(TestReceiver.LastError, Is.Empty);
-        Assert.That(TestSender.LastError, Is.Empty);
+        using MultiChannel TestReceiver2 = new(TestGuid, ChannelMode.Receive, 1);
+        using MultiChannel TestSender2 = new(TestGuid, ChannelMode.Send, 1);
 
-        Channel.Capacity = OldCapacity;
+        TestReceiver2.Open();
+        TestSender2.Open();
+
+        Assert.That(TestReceiver2.IsOpen, Is.True);
+        Assert.That(TestSender2.IsOpen, Is.True);
+        Assert.That(TestReceiver2.LastError, Is.Empty);
+        Assert.That(TestSender2.LastError, Is.Empty);
+
+        Assert.That(TestReceiver2.GetFreeLength(0), Is.GreaterThan(0));
+        Assert.That(TestReceiver2.GetFreeLength(0), Is.LessThan(OldCapacity));
+        Assert.That(TestReceiver2.GetUsedLength(0), Is.EqualTo(0));
+        Assert.That(TestReceiver2.GetUsedLength(0), Is.LessThan(OldCapacity));
+        Assert.That(TestSender2.GetFreeLength(), Is.GreaterThan(0));
+        Assert.That(TestSender2.GetFreeLength(), Is.LessThan(OldCapacity));
+        Assert.That(TestSender2.GetUsedLength(), Is.EqualTo(0));
+        Assert.That(TestSender2.GetFreeLength(0), Is.GreaterThan(0));
+        Assert.That(TestSender2.GetFreeLength(0), Is.LessThan(OldCapacity));
+        Assert.That(TestSender2.GetUsedLength(0), Is.EqualTo(0));
+
+        TestReceiver2.Close();
+        TestSender2.Close();
+
+        Assert.That(TestReceiver2.IsOpen, Is.False);
+        Assert.That(TestSender2.IsOpen, Is.False);
+        Assert.That(TestReceiver2.LastError, Is.Empty);
+        Assert.That(TestSender2.LastError, Is.Empty);
+
+        MultiChannel.Capacity = OldCapacity;
     }
 
     [Test]
@@ -735,8 +770,9 @@ public class TestMultiChannel
     [Test]
     public void TestGetStatsError()
     {
-        using MultiChannel TestReceiver = new(TestGuid, ChannelMode.Receive, 1);
-        using MultiChannel TestSender = new(TestGuid, ChannelMode.Send, 1);
+        const string NullName = null!;
+        using MultiChannel TestReceiver = new(TestGuid, ChannelMode.Receive, 2);
+        using MultiChannel TestSender = new(TestGuid, ChannelMode.Send, 2);
 
         Assert.That(TestReceiver, Is.Not.Null);
         Assert.That(TestSender, Is.Not.Null);
@@ -752,8 +788,13 @@ public class TestMultiChannel
         Assert.That(TestReceiver.LastError, Is.Empty);
         Assert.That(TestSender.LastError, Is.Empty);
 
+        _ = Assert.Throws<ArgumentNullException>(() => TestReceiver.GetStats(NullName));
+        _ = Assert.Throws<ArgumentNullException>(() => TestSender.GetStats(NullName));
+        _ = Assert.Throws<ArgumentNullException>(() => TestReceiver.GetStats(NullName, 0));
+        _ = Assert.Throws<ArgumentNullException>(() => TestSender.GetStats(NullName, 0));
         _ = Assert.Throws<ArgumentOutOfRangeException>(() => TestReceiver.GetStats(string.Empty, -1));
-        _ = Assert.Throws<ArgumentOutOfRangeException>(() => TestReceiver.GetStats(string.Empty, 1));
+        _ = Assert.Throws<ArgumentOutOfRangeException>(() => TestReceiver.GetStats(string.Empty, TestReceiver.ChannelCount));
+        _ = Assert.Throws<InvalidOperationException>(() => TestSender.GetStats(string.Empty, 1));
 
         TestSender.Close();
         TestReceiver.Close();
