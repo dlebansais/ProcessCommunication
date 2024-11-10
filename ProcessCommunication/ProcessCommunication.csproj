@@ -14,8 +14,8 @@
         <Product />
         <Description>A library to communicate between processes</Description>
         <Copyright>Copyright © 2024 David Le Bansais</Copyright>
-        <AssemblyVersion>2.0.2.6</AssemblyVersion>
-        <FileVersion>2.0.2.6</FileVersion>
+        <AssemblyVersion>2.0.2.7</AssemblyVersion>
+        <FileVersion>2.0.2.7</FileVersion>
         <RepositoryUrl>https://github.com/dlebansais/ProcessCommunication</RepositoryUrl>
         <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
 
