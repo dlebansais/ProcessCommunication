@@ -63,7 +63,10 @@ public static class Remote
         if (!CreatedChannel.IsOpen)
             return null;
 
-        return CreatedChannel;
+        IChannel Result = CreatedChannel;
+        CreatedChannel = null;
+
+        return Result;
     }
 
     /// <summary>
@@ -156,7 +159,10 @@ public static class Remote
         if (!CreatedMultiChannel.IsOpen)
             return null;
 
-        return CreatedMultiChannel;
+        IMultiChannel Result = CreatedMultiChannel;
+        CreatedMultiChannel = null;
+
+        return Result;
     }
 
     /// <summary>
