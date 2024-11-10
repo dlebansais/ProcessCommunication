@@ -72,9 +72,8 @@ public static class Remote
     /// <param name="pathToProcess">The process to launch.</param>
     /// <param name="guid">The channel guid.</param>
     /// <param name="arguments">Optional arguments.</param>
-    /// <param name="continueOnCapturedContext"><see langword="true"/> to attempt to marshal the continuation back to the original context captured; otherwise, <see langword="false"/>.</param>
     /// <returns>The channel if successul; otherwise, <see langword="null"/>.</returns>
-    public static async Task<IChannel?> LaunchAndOpenChannelAsync(string pathToProcess, Guid guid, string? arguments = null, bool continueOnCapturedContext = true)
+    public static async Task<IChannel?> LaunchAndOpenChannelAsync(string pathToProcess, Guid guid, string? arguments = null)
     {
         Channel? Result = null;
 
@@ -109,7 +108,7 @@ public static class Remote
                 break;
             }
             else
-                await Task.Delay(100).ConfigureAwait(continueOnCapturedContext);
+                await Task.Delay(100).ConfigureAwait(false);
         }
 
         Channel?.Dispose();
@@ -167,9 +166,8 @@ public static class Remote
     /// <param name="guid">The channel guid.</param>
     /// <param name="channelCount">The channel count. If 0 or less, 1 is assumed.</param>
     /// <param name="arguments">Optional arguments.</param>
-    /// <param name="continueOnCapturedContext"><see langword="true"/> to attempt to marshal the continuation back to the original context captured; otherwise, <see langword="false"/>.</param>
     /// <returns>The channel if successul; otherwise, <see langword="null"/>.</returns>
-    public static async Task<IMultiChannel?> LaunchAndOpenChannelAsync(string pathToProcess, Guid guid, int channelCount, string? arguments = null, bool continueOnCapturedContext = true)
+    public static async Task<IMultiChannel?> LaunchAndOpenChannelAsync(string pathToProcess, Guid guid, int channelCount, string? arguments = null)
     {
         MultiChannel? Result = null;
 
@@ -204,7 +202,7 @@ public static class Remote
                 break;
             }
             else
-                await Task.Delay(100).ConfigureAwait(continueOnCapturedContext);
+                await Task.Delay(100).ConfigureAwait(false);
         }
 
         Channel?.Dispose();
