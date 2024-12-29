@@ -4,7 +4,7 @@ using System;
 using NUnit.Framework;
 
 [TestFixture]
-public class TestMultiChannel
+internal class TestMultiChannel
 {
     internal static readonly Guid TestGuid = new("20E9C969-C990-4DEB-984F-979C824DCC18");
 
@@ -157,10 +157,8 @@ public class TestMultiChannel
         Assert.That(TestReceiver.GetUsedLength(2), Is.EqualTo(DataSent.Length));
 
         bool IsDataReceived;
-        byte[] DataReceived;
-        int Index;
 
-        IsDataReceived = TestReceiver.TryRead(out DataReceived, out Index);
+        IsDataReceived = TestReceiver.TryRead(out byte[] DataReceived, out int Index);
 
         Assert.That(IsDataReceived, Is.True);
         Assert.That(DataReceived, Is.Not.Null);
@@ -254,7 +252,7 @@ public class TestMultiChannel
 
         Assert.That(TestReceiver.IsOpen, Is.True);
 
-        _ = Assert.Throws<InvalidOperationException>(() => TestReceiver.Open());
+        _ = Assert.Throws<InvalidOperationException>(TestReceiver.Open);
 
         TestReceiver.Close();
 
@@ -495,7 +493,7 @@ public class TestMultiChannel
         Assert.That(TestReceiver.LastError, Is.Empty);
         Assert.That(TestSender.LastError, Is.Empty);
 
-        byte[] DataSent = new byte[(MultiChannel.Capacity * 3) / 16];
+        byte[] DataSent = new byte[MultiChannel.Capacity * 3 / 16];
         for (int i = 0; i < DataSent.Length; i++)
             DataSent[i] = (byte)i;
 
@@ -557,7 +555,7 @@ public class TestMultiChannel
         Assert.That(TestReceiver.LastError, Is.Empty);
         Assert.That(TestSender.LastError, Is.Empty);
 
-        byte[] DataSent = new byte[(MultiChannel.Capacity * 3) / 16];
+        byte[] DataSent = new byte[MultiChannel.Capacity * 3 / 16];
 
         for (int i = 0; i < 4; i++)
             TestSender.Write(DataSent);
@@ -609,7 +607,7 @@ public class TestMultiChannel
         Assert.That(TestReceiver.LastError, Is.Empty);
         Assert.That(TestSender.LastError, Is.Empty);
 
-        byte[] DataSent = new byte[(MultiChannel.Capacity * 3) / 16];
+        byte[] DataSent = new byte[MultiChannel.Capacity * 3 / 16];
 
         for (int i = 0; i < 5; i++)
             TestSender.Write(DataSent);
@@ -644,7 +642,7 @@ public class TestMultiChannel
         Assert.That(TestReceiver.LastError, Is.Empty);
         Assert.That(TestSender.LastError, Is.Empty);
 
-        byte[] DataSent = new byte[(MultiChannel.Capacity * 3) / 16];
+        byte[] DataSent = new byte[MultiChannel.Capacity * 3 / 16];
 
         for (int i = 0; i < 3; i++)
         {

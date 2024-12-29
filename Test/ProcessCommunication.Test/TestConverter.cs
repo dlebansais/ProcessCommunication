@@ -4,7 +4,7 @@ using System;
 using NUnit.Framework;
 
 [TestFixture]
-public class TestConverter
+internal class TestConverter
 {
     [Test]
     public void TestSuccess()

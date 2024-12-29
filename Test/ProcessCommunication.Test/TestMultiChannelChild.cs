@@ -2,7 +2,7 @@
 
 using System;
 
-public class TestMultiChannelChild(Guid guid, ChannelMode mode, int channelCount) : MultiChannel(guid, mode, channelCount)
+internal class TestMultiChannelChild(Guid channelGuid, ChannelMode mode, int channelCount) : MultiChannel(channelGuid, mode, channelCount)
 {
     protected override void Dispose(bool disposing)
     {

@@ -4,12 +4,14 @@ namespace ProcessCommunication.Test;
 
 using System;
 using System.Diagnostics;
+#if NET8_0_OR_GREATER
 using System.Globalization;
+#endif
 using System.Threading.Tasks;
 using NUnit.Framework;
 
 [TestFixture]
-public class TestRemoteSingle
+internal class TestRemoteSingle
 {
     [Test]
     [NonParallelizable]

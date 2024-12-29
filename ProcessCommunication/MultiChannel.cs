@@ -9,10 +9,10 @@ using Contracts;
 /// <summary>
 /// Represents a communication channel.
 /// </summary>
-/// <param name="guid">The channel guid.</param>
+/// <param name="channelGuid">The channel guid.</param>
 /// <param name="mode">The caller channel mode.</param>
 /// <param name="channelCount">The channel count. If 0 or less, 1 is assumed.</param>
-public class MultiChannel(Guid guid, ChannelMode mode, int channelCount) : IMultiChannel, IDisposable
+public class MultiChannel(Guid channelGuid, ChannelMode mode, int channelCount) : IMultiChannel, IDisposable
 {
     /// <summary>
     /// Gets or sets the channel capacity.
@@ -22,7 +22,7 @@ public class MultiChannel(Guid guid, ChannelMode mode, int channelCount) : IMult
     /// <summary>
     /// Gets the channel guid.
     /// </summary>
-    public Guid Guid { get; } = guid;
+    public Guid ChannelGuid { get; } = channelGuid;
 
     /// <summary>
     /// Gets the caller channel mode.
@@ -134,9 +134,7 @@ public class MultiChannel(Guid guid, ChannelMode mode, int channelCount) : IMult
     }
 
     private void CloseSendingDataChannel()
-    {
-        SetDataFileAndAccessor(SendingIndex, null, null, null);
-    }
+        => SetDataFileAndAccessor(SendingIndex, null, null, null);
 
     /// <summary>
     /// Gets a value indicating whether the channel is open.
@@ -150,10 +148,9 @@ public class MultiChannel(Guid guid, ChannelMode mode, int channelCount) : IMult
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is not a valid index.</exception>
     public bool IsConnected(int index)
     {
-        if (index < 0 || index >= EffectiveChannelCount)
-            throw new ArgumentOutOfRangeException(nameof(index));
-
-        return DataAccessors[index] is not null;
+        return index < 0 || index >= EffectiveChannelCount
+            ? throw new ArgumentOutOfRangeException(nameof(index))
+            : DataAccessors[index] is not null;
     }
 
     /// <summary>
@@ -370,8 +367,8 @@ public class MultiChannel(Guid guid, ChannelMode mode, int channelCount) : IMult
         SendingIndex = Mode == ChannelMode.Receive || accessor is null ? -1 : index;
     }
 
-    private string DataMapName(int index) => Guid.ToString("B") + "-Channel" + index.ToString(CultureInfo.InvariantCulture);
-    private string DataMutexName(int index) => Guid.ToString("B") + "-Mutex" + index.ToString(CultureInfo.InvariantCulture);
+    private string DataMapName(int index) => ChannelGuid.ToString("B") + "-Channel" + index.ToString(CultureInfo.InvariantCulture);
+    private string DataMutexName(int index) => ChannelGuid.ToString("B") + "-Mutex" + index.ToString(CultureInfo.InvariantCulture);
 
     private readonly int EffectiveCapacity = Capacity > 0 ? Capacity : 0x100;
     private readonly MemoryMappedFile?[] DataFiles = new MemoryMappedFile?[channelCount > 0 ? channelCount : 1];
@@ -383,9 +380,9 @@ public class MultiChannel(Guid guid, ChannelMode mode, int channelCount) : IMult
     private bool DisposedValue;
 
     /// <summary>
-    /// Optionally disposes of the instance.
+    /// Disposes of managed and unmanaged resources.
     /// </summary>
-    /// <param name="disposing">True if disposing must be done.</param>
+    /// <param name="disposing"><see langword="True"/> if the method should dispose of resources; Otherwise, <see langword="false"/>.</param>
     protected virtual void Dispose(bool disposing)
     {
         if (!DisposedValue)

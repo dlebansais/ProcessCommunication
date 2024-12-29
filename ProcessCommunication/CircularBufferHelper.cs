@@ -113,10 +113,9 @@ internal static class CircularBufferHelper
     /// <param name="capacity">The buffer capacity.</param>
     public static int GetFreeLength(int head, int tail, int capacity)
     {
-        if (tail > head)
-            return tail - head - 1;
-        else
-            return capacity - head + tail - 1;
+        return tail > head
+            ? tail - head - 1
+            : capacity - head + tail - 1;
     }
 
     /// <summary>
@@ -141,9 +140,8 @@ internal static class CircularBufferHelper
     /// <param name="capacity">The buffer capacity.</param>
     public static int GetUsedLength(int head, int tail, int capacity)
     {
-        if (head >= tail)
-            return head - tail;
-        else
-            return capacity - tail + head;
+        return head >= tail
+            ? head - tail
+            : capacity - tail + head;
     }
 }

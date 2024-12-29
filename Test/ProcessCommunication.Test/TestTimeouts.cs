@@ -4,7 +4,7 @@ using System;
 using NUnit.Framework;
 
 [TestFixture]
-public class TestTimeouts
+internal class TestTimeouts
 {
     [Test]
     public void TestSuccess()

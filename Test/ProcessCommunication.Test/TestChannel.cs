@@ -4,7 +4,7 @@ using System;
 using NUnit.Framework;
 
 [TestFixture]
-public class TestChannel
+internal class TestChannel
 {
     internal static readonly Guid TestGuid = new("20E9C969-C990-4DEB-984F-979C824DCC18");
 
@@ -101,7 +101,7 @@ public class TestChannel
 
         Assert.That(TestReceiver.IsOpen, Is.True);
 
-        _ = Assert.Throws<InvalidOperationException>(() => TestReceiver.Open());
+        _ = Assert.Throws<InvalidOperationException>(TestReceiver.Open);
 
         TestReceiver.Close();
 
@@ -302,7 +302,7 @@ public class TestChannel
         Assert.That(TestReceiver.LastError, Is.Empty);
         Assert.That(TestSender.LastError, Is.Empty);
 
-        byte[] DataSent = new byte[(Channel.Capacity * 3) / 16];
+        byte[] DataSent = new byte[Channel.Capacity * 3 / 16];
         for (int i = 0; i < DataSent.Length; i++)
             DataSent[i] = (byte)i;
 
@@ -359,7 +359,7 @@ public class TestChannel
         Assert.That(TestReceiver.LastError, Is.Empty);
         Assert.That(TestSender.LastError, Is.Empty);
 
-        byte[] DataSent = new byte[(Channel.Capacity * 3) / 16];
+        byte[] DataSent = new byte[Channel.Capacity * 3 / 16];
 
         for (int i = 0; i < 4; i++)
             TestSender.Write(DataSent);
@@ -411,7 +411,7 @@ public class TestChannel
         Assert.That(TestReceiver.LastError, Is.Empty);
         Assert.That(TestSender.LastError, Is.Empty);
 
-        byte[] DataSent = new byte[(Channel.Capacity * 3) / 16];
+        byte[] DataSent = new byte[Channel.Capacity * 3 / 16];
 
         for (int i = 0; i < 5; i++)
             TestSender.Write(DataSent);
@@ -446,7 +446,7 @@ public class TestChannel
         Assert.That(TestReceiver.LastError, Is.Empty);
         Assert.That(TestSender.LastError, Is.Empty);
 
-        byte[] DataSent = new byte[(Channel.Capacity * 3) / 16];
+        byte[] DataSent = new byte[Channel.Capacity * 3 / 16];
 
         for (int i = 0; i < 3; i++)
         {

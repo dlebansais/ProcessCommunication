@@ -30,10 +30,10 @@ public static class Remote
     /// After <see cref="Timeouts.ProcessLaunchTimeout"/> has elapsed this method will always return the same result until <see cref="Reset"/> is called.
     /// </summary>
     /// <param name="pathToProcess">The process to launch.</param>
-    /// <param name="guid">The channel guid.</param>
+    /// <param name="channelGuid">The channel guid.</param>
     /// <param name="arguments">Optional arguments.</param>
     /// <returns>The channel if successul; otherwise, <see langword="null"/>.</returns>
-    public static IChannel? LaunchAndOpenChannel(string pathToProcess, Guid guid, string? arguments = null)
+    public static IChannel? LaunchAndOpenChannel(string pathToProcess, Guid channelGuid, string? arguments = null)
     {
         if (!CreationStopwatch.IsRunning)
         {
@@ -41,11 +41,13 @@ public static class Remote
 
             try
             {
-                ProcessStartInfo ProcessStartInfo = new();
-                ProcessStartInfo.FileName = pathToProcess;
-                ProcessStartInfo.Arguments = arguments;
-                ProcessStartInfo.UseShellExecute = false;
-                ProcessStartInfo.WorkingDirectory = Path.GetDirectoryName(pathToProcess);
+                ProcessStartInfo ProcessStartInfo = new()
+                {
+                    FileName = pathToProcess,
+                    Arguments = arguments,
+                    UseShellExecute = false,
+                    WorkingDirectory = Path.GetDirectoryName(pathToProcess),
+                };
 
                 using Process? CreatedProcess = Process.Start(ProcessStartInfo);
             }
@@ -54,8 +56,7 @@ public static class Remote
             }
         }
 
-        if (CreatedChannel is null)
-            CreatedChannel = SetChannel(new Channel(guid, ChannelMode.Send));
+        CreatedChannel ??= SetChannel(new Channel(channelGuid, ChannelMode.Send));
 
         if (CreationStopwatch.Elapsed < Timeouts.ProcessLaunchTimeout)
             CreatedChannel.Open();
@@ -73,10 +74,10 @@ public static class Remote
     /// Asynchronously launches a process and opens a channel in send mode.
     /// </summary>
     /// <param name="pathToProcess">The process to launch.</param>
-    /// <param name="guid">The channel guid.</param>
+    /// <param name="channelGuid">The channel guid.</param>
     /// <param name="arguments">Optional arguments.</param>
     /// <returns>The channel if successul; otherwise, <see langword="null"/>.</returns>
-    public static async Task<IChannel?> LaunchAndOpenChannelAsync(string pathToProcess, Guid guid, string? arguments = null)
+    public static async Task<IChannel?> LaunchAndOpenChannelAsync(string pathToProcess, Guid channelGuid, string? arguments = null)
     {
         Channel? Result = null;
 
@@ -84,11 +85,13 @@ public static class Remote
 
         try
         {
-            ProcessStartInfo ProcessStartInfo = new();
-            ProcessStartInfo.FileName = pathToProcess;
-            ProcessStartInfo.Arguments = arguments;
-            ProcessStartInfo.UseShellExecute = false;
-            ProcessStartInfo.WorkingDirectory = Path.GetDirectoryName(pathToProcess);
+            ProcessStartInfo ProcessStartInfo = new()
+            {
+                FileName = pathToProcess,
+                Arguments = arguments,
+                UseShellExecute = false,
+                WorkingDirectory = Path.GetDirectoryName(pathToProcess),
+            };
 
             using Process? CreatedProcess = Process.Start(ProcessStartInfo);
         }
@@ -98,7 +101,7 @@ public static class Remote
         }
 
         Channel? Channel;
-        Channel = new(guid, ChannelMode.Send);
+        Channel = new(channelGuid, ChannelMode.Send);
 
         while (CreationStopwatch.Elapsed < Timeouts.ProcessLaunchTimeout)
         {
@@ -111,7 +114,9 @@ public static class Remote
                 break;
             }
             else
+            {
                 await Task.Delay(100).ConfigureAwait(false);
+            }
         }
 
         Channel?.Dispose();
@@ -125,11 +130,11 @@ public static class Remote
     /// After <see cref="Timeouts.ProcessLaunchTimeout"/> has elapsed this method will always return the same result until <see cref="Reset"/> is called.
     /// </summary>
     /// <param name="pathToProcess">The process to launch.</param>
-    /// <param name="guid">The channel guid.</param>
+    /// <param name="channelGuid">The channel guid.</param>
     /// <param name="channelCount">The channel count. If 0 or less, 1 is assumed.</param>
     /// <param name="arguments">Optional arguments.</param>
     /// <returns>The channel if successul; otherwise, <see langword="null"/>.</returns>
-    public static IMultiChannel? LaunchAndOpenChannel(string pathToProcess, Guid guid, int channelCount, string? arguments = null)
+    public static IMultiChannel? LaunchAndOpenChannel(string pathToProcess, Guid channelGuid, int channelCount, string? arguments = null)
     {
         if (!CreationStopwatch.IsRunning)
         {
@@ -137,11 +142,13 @@ public static class Remote
 
             try
             {
-                ProcessStartInfo ProcessStartInfo = new();
-                ProcessStartInfo.FileName = pathToProcess;
-                ProcessStartInfo.Arguments = arguments;
-                ProcessStartInfo.UseShellExecute = false;
-                ProcessStartInfo.WorkingDirectory = Path.GetDirectoryName(pathToProcess);
+                ProcessStartInfo ProcessStartInfo = new()
+                {
+                    FileName = pathToProcess,
+                    Arguments = arguments,
+                    UseShellExecute = false,
+                    WorkingDirectory = Path.GetDirectoryName(pathToProcess),
+                };
 
                 using Process? CreatedProcess = Process.Start(ProcessStartInfo);
             }
@@ -150,8 +157,7 @@ public static class Remote
             }
         }
 
-        if (CreatedMultiChannel is null)
-            CreatedMultiChannel = SetMultiChannel(new MultiChannel(guid, ChannelMode.Send, channelCount));
+        CreatedMultiChannel ??= SetMultiChannel(new MultiChannel(channelGuid, ChannelMode.Send, channelCount));
 
         if (CreationStopwatch.Elapsed < Timeouts.ProcessLaunchTimeout)
             CreatedMultiChannel.Open();
@@ -169,11 +175,11 @@ public static class Remote
     /// Asynchronously launches a process and opens a channel in send mode.
     /// </summary>
     /// <param name="pathToProcess">The process to launch.</param>
-    /// <param name="guid">The channel guid.</param>
+    /// <param name="channelGuid">The channel guid.</param>
     /// <param name="channelCount">The channel count. If 0 or less, 1 is assumed.</param>
     /// <param name="arguments">Optional arguments.</param>
     /// <returns>The channel if successul; otherwise, <see langword="null"/>.</returns>
-    public static async Task<IMultiChannel?> LaunchAndOpenChannelAsync(string pathToProcess, Guid guid, int channelCount, string? arguments = null)
+    public static async Task<IMultiChannel?> LaunchAndOpenChannelAsync(string pathToProcess, Guid channelGuid, int channelCount, string? arguments = null)
     {
         MultiChannel? Result = null;
 
@@ -181,11 +187,13 @@ public static class Remote
 
         try
         {
-            ProcessStartInfo ProcessStartInfo = new();
-            ProcessStartInfo.FileName = pathToProcess;
-            ProcessStartInfo.Arguments = arguments;
-            ProcessStartInfo.UseShellExecute = false;
-            ProcessStartInfo.WorkingDirectory = Path.GetDirectoryName(pathToProcess);
+            ProcessStartInfo ProcessStartInfo = new()
+            {
+                FileName = pathToProcess,
+                Arguments = arguments,
+                UseShellExecute = false,
+                WorkingDirectory = Path.GetDirectoryName(pathToProcess),
+            };
 
             using Process? CreatedProcess = Process.Start(ProcessStartInfo);
         }
@@ -195,7 +203,7 @@ public static class Remote
         }
 
         MultiChannel? Channel;
-        Channel = new(guid, ChannelMode.Send, channelCount);
+        Channel = new(channelGuid, ChannelMode.Send, channelCount);
 
         while (CreationStopwatch.Elapsed < Timeouts.ProcessLaunchTimeout)
         {
@@ -208,7 +216,9 @@ public static class Remote
                 break;
             }
             else
+            {
                 await Task.Delay(100).ConfigureAwait(false);
+            }
         }
 
         Channel?.Dispose();

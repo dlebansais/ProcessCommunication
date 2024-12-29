@@ -8,9 +8,9 @@ using Contracts;
 /// <summary>
 /// Represents a communication channel.
 /// </summary>
-/// <param name="guid">The channel guid.</param>
+/// <param name="channelGuid">The channel guid.</param>
 /// <param name="mode">The caller channel mode.</param>
-public class Channel(Guid guid, ChannelMode mode) : IChannel, IDisposable
+public class Channel(Guid channelGuid, ChannelMode mode) : IChannel, IDisposable
 {
     /// <summary>
     /// Gets a shared guid from client to server.
@@ -22,8 +22,8 @@ public class Channel(Guid guid, ChannelMode mode) : IChannel, IDisposable
     /// </summary>
     public static int Capacity { get; set; } = 0x100000;
 
-    /// <inheritdoc cref="IChannel.Guid" />
-    public Guid Guid { get; } = guid;
+    /// <inheritdoc cref="IChannel.ChannelGuid" />
+    public Guid ChannelGuid { get; } = channelGuid;
 
     /// <inheritdoc cref="IChannel.Mode" />
     public ChannelMode Mode { get; } = mode;
@@ -44,8 +44,8 @@ public class Channel(Guid guid, ChannelMode mode) : IChannel, IDisposable
         try
         {
             int CapacityWithHeadTail = EffectiveCapacity + (sizeof(int) * 2);
-            string ChannelName = Guid.ToString("B") + "-Channel";
-            string MutexName = Guid.ToString("B") + "-Mutex";
+            string ChannelName = ChannelGuid.ToString("B") + "-Channel";
+            string MutexName = ChannelGuid.ToString("B") + "-Mutex";
 
             if (Mode == ChannelMode.Receive)
             {
@@ -91,29 +91,18 @@ public class Channel(Guid guid, ChannelMode mode) : IChannel, IDisposable
     /// <inheritdoc cref="IChannel.TryRead" />
     public bool TryRead(out byte[] data)
     {
-        if (Mode != ChannelMode.Receive || Accessor is null)
-            throw new InvalidOperationException();
-
-        return CircularBufferHelper.Read(Accessor, EffectiveCapacity, out data);
+        return Mode != ChannelMode.Receive || Accessor is null
+            ? throw new InvalidOperationException()
+            : CircularBufferHelper.Read(Accessor, EffectiveCapacity, out data);
     }
 
     /// <inheritdoc cref="IChannel.GetFreeLength" />
     public int GetFreeLength()
-    {
-        if (Accessor is null)
-            throw new InvalidOperationException();
-
-        return CircularBufferHelper.GetFreeLength(Accessor, EffectiveCapacity);
-    }
+        => Accessor is null ? throw new InvalidOperationException() : CircularBufferHelper.GetFreeLength(Accessor, EffectiveCapacity);
 
     /// <inheritdoc cref="IChannel.GetUsedLength" />
     public int GetUsedLength()
-    {
-        if (Accessor is null)
-            throw new InvalidOperationException();
-
-        return CircularBufferHelper.GetUsedLength(Accessor, EffectiveCapacity);
-    }
+        => Accessor is null ? throw new InvalidOperationException() : CircularBufferHelper.GetUsedLength(Accessor, EffectiveCapacity);
 
     /// <inheritdoc cref="IChannel.Write" />
     public void Write(byte[] data)
@@ -180,9 +169,9 @@ public class Channel(Guid guid, ChannelMode mode) : IChannel, IDisposable
     private bool DisposedValue;
 
     /// <summary>
-    /// Optionally disposes of the instance.
+    /// Disposes of managed and unmanaged resources.
     /// </summary>
-    /// <param name="disposing">True if disposing must be done.</param>
+    /// <param name="disposing"><see langword="True"/> if the method should dispose of resources; Otherwise, <see langword="false"/>.</param>
     protected virtual void Dispose(bool disposing)
     {
         if (!DisposedValue)

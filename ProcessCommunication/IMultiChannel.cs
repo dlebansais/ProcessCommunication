@@ -10,7 +10,7 @@ public interface IMultiChannel : IDisposable
     /// <summary>
     /// Gets the channel guid.
     /// </summary>
-    Guid Guid { get; }
+    Guid ChannelGuid { get; }
 
     /// <summary>
     /// Gets the caller channel mode.
