@@ -26,9 +26,9 @@ internal class TestChannel
         Assert.That(TestSender.LastError, Is.Empty);
 
         Assert.That(TestReceiver.GetFreeLength(), Is.EqualTo(Channel.Capacity - 1));
-        Assert.That(TestReceiver.GetUsedLength(), Is.EqualTo(0));
+        Assert.That(TestReceiver.GetUsedLength(), Is.Zero);
         Assert.That(TestSender.GetFreeLength(), Is.EqualTo(Channel.Capacity - 1));
-        Assert.That(TestSender.GetUsedLength(), Is.EqualTo(0));
+        Assert.That(TestSender.GetUsedLength(), Is.Zero);
 
         TestReceiver.Close();
         TestSender.Close();
@@ -72,10 +72,10 @@ internal class TestChannel
         Assert.That(DataReceived, Is.EqualTo(DataSent));
 
         Assert.That(TestSender.GetFreeLength(), Is.EqualTo(Channel.Capacity - 1));
-        Assert.That(TestSender.GetUsedLength(), Is.EqualTo(0));
+        Assert.That(TestSender.GetUsedLength(), Is.Zero);
 
         Assert.That(TestReceiver.GetFreeLength(), Is.EqualTo(Channel.Capacity - 1));
-        Assert.That(TestReceiver.GetUsedLength(), Is.EqualTo(0));
+        Assert.That(TestReceiver.GetUsedLength(), Is.Zero);
 
         string ReceiverStats = TestReceiver.GetStats(string.Empty);
         string SenderStats = TestSender.GetStats(string.Empty);
@@ -323,10 +323,10 @@ internal class TestChannel
             Assert.That(DataReceived, Is.EqualTo(DataSent));
 
             Assert.That(TestSender.GetFreeLength(), Is.EqualTo(Channel.Capacity - 1));
-            Assert.That(TestSender.GetUsedLength(), Is.EqualTo(0));
+            Assert.That(TestSender.GetUsedLength(), Is.Zero);
 
             Assert.That(TestReceiver.GetFreeLength(), Is.EqualTo(Channel.Capacity - 1));
-            Assert.That(TestReceiver.GetUsedLength(), Is.EqualTo(0));
+            Assert.That(TestReceiver.GetUsedLength(), Is.Zero);
         }
 
         bool IsLastDataReceived = TestReceiver.TryRead(out _);
@@ -494,9 +494,9 @@ internal class TestChannel
         Channel.Capacity = -1;
 
         Assert.That(TestReceiver1.GetFreeLength(), Is.EqualTo(OldCapacity - 1));
-        Assert.That(TestReceiver1.GetUsedLength(), Is.EqualTo(0));
+        Assert.That(TestReceiver1.GetUsedLength(), Is.Zero);
         Assert.That(TestSender1.GetFreeLength(), Is.EqualTo(OldCapacity - 1));
-        Assert.That(TestSender1.GetUsedLength(), Is.EqualTo(0));
+        Assert.That(TestSender1.GetUsedLength(), Is.Zero);
 
         TestReceiver1.Close();
         TestSender1.Close();
@@ -522,10 +522,10 @@ internal class TestChannel
 
         Assert.That(TestReceiver2.GetFreeLength(), Is.GreaterThan(0));
         Assert.That(TestReceiver2.GetFreeLength(), Is.LessThan(OldCapacity));
-        Assert.That(TestReceiver2.GetUsedLength(), Is.EqualTo(0));
+        Assert.That(TestReceiver2.GetUsedLength(), Is.Zero);
         Assert.That(TestSender2.GetFreeLength(), Is.GreaterThan(0));
         Assert.That(TestSender2.GetFreeLength(), Is.LessThan(OldCapacity));
-        Assert.That(TestSender2.GetUsedLength(), Is.EqualTo(0));
+        Assert.That(TestSender2.GetUsedLength(), Is.Zero);
 
         Channel.Capacity = OldCapacity;
     }

@@ -52,7 +52,7 @@ public interface IChannel : IDisposable
     /// Gets the number of used bytes in the channel.
     /// </summary>
     /// <exception cref="InvalidOperationException">The channel is not open.</exception>
-    public int GetUsedLength();
+    int GetUsedLength();
 
     /// <summary>
     /// Writes data to the channel.
