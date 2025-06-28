@@ -8,14 +8,14 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         
         <RootNamespace>ProcessCommunication</RootNamespace>
-        <Version>3.0.1</Version>
+        <Version>3.0.2</Version>
         <Authors>David Le Bansais</Authors>
         <Company />
         <Product />
         <Description>A library to communicate between processes</Description>
         <Copyright>Copyright © 2025 David Le Bansais</Copyright>
-        <AssemblyVersion>3.0.1.10</AssemblyVersion>
-        <FileVersion>3.0.1.10</FileVersion>
+        <AssemblyVersion>3.0.2.11</AssemblyVersion>
+        <FileVersion>3.0.2.11</FileVersion>
         <RepositoryUrl>https://github.com/dlebansais/ProcessCommunication</RepositoryUrl>
         <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
 
@@ -73,10 +73,6 @@
 
         <PackageReference Include="Method.Contracts-Debug" Version="2.0.1" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" />
         <PackageReference Include="Method.Contracts" Version="2.0.1" Condition="'$(Configuration)|$(Platform)'!='Debug|x64'" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.6" />
     </ItemGroup>
 
     <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(SolutionDir)'!='*Undefined*'">
