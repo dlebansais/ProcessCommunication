@@ -241,6 +241,7 @@ public static class Remote
         CreatedChannel?.Dispose();
         CreatedChannel = channel;
 
+        // ! When channel is null, the retun value is not used.
         return channel!;
     }
 
@@ -249,6 +250,7 @@ public static class Remote
         CreatedMultiChannel?.Dispose();
         CreatedMultiChannel = channel;
 
+        // ! When channel is null, the retun value is not used.
         return channel!;
     }
 

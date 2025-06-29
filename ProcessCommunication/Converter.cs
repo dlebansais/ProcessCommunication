@@ -1,6 +1,7 @@
 ﻿namespace ProcessCommunication;
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 /// <summary>
@@ -30,7 +31,7 @@ public static class Converter
     /// <param name="data">Data to be decoded to a string.</param>
     /// <param name="offset">The offset in <paramref name="data"/> where to start decoding.</param>
     /// <param name="text">The decoded string.</param>
-    public static bool TryDecodeString(byte[] data, ref int offset, out string text)
+    public static bool TryDecodeString(byte[] data, ref int offset, [MaybeNullWhen(false)] out string text)
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(data);
@@ -54,7 +55,7 @@ public static class Converter
             }
         }
 
-        text = null!;
+        text = null;
         return false;
     }
 }

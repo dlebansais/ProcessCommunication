@@ -14,7 +14,7 @@ internal class TestConverter
         byte[] Encoded = Converter.EncodeString(TestString);
 
         int Offset = 0;
-        bool Success = Converter.TryDecodeString(Encoded, ref Offset, out string DecodedString);
+        bool Success = Converter.TryDecodeString(Encoded, ref Offset, out string? DecodedString);
 
         Assert.That(Success, Is.True);
         Assert.That(DecodedString, Is.EqualTo(TestString));
