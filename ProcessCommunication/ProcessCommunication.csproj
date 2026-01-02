@@ -13,7 +13,7 @@
         <Company />
         <Product />
         <Description>A library to communicate between processes</Description>
-        <Copyright>Copyright © 2025 David Le Bansais</Copyright>
+        <Copyright>Copyright © 2026 David Le Bansais</Copyright>
         <AssemblyVersion>3.0.6.15</AssemblyVersion>
         <FileVersion>3.0.6.15</FileVersion>
         <RepositoryUrl>https://github.com/dlebansais/ProcessCommunication</RepositoryUrl>
@@ -62,7 +62,7 @@
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="dlebansais.CSharpLatest" Version="2.4.0">
+        <PackageReference Include="dlebansais.CSharpLatest" Version="2.4.3">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>

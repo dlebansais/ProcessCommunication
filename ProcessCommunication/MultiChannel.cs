@@ -19,29 +19,19 @@ public class MultiChannel(Guid channelGuid, ChannelMode mode, int channelCount) 
     /// </summary>
     public static int Capacity { get; set; } = 0x100000;
 
-    /// <summary>
-    /// Gets the channel guid.
-    /// </summary>
+    /// <inheritdoc />
     public Guid ChannelGuid { get; } = channelGuid;
 
-    /// <summary>
-    /// Gets the caller channel mode.
-    /// </summary>
+    /// <inheritdoc />
     public ChannelMode Mode { get; } = mode;
 
-    /// <summary>
-    /// Gets the channel count. If 0 or less, 1 is assumed (see <see cref="EffectiveChannelCount"/>).
-    /// </summary>
+    /// <inheritdoc />
     public int ChannelCount { get; } = channelCount;
 
-    /// <summary>
-    /// Gets the effective channel count.
-    /// </summary>
+    /// <inheritdoc />
     public int EffectiveChannelCount { get; } = channelCount > 0 ? channelCount : 1;
 
-    /// <summary>
-    /// Opens the channel.
-    /// </summary>
+    /// <inheritdoc />
     public void Open()
     {
         if (IsOpen)
@@ -136,15 +126,10 @@ public class MultiChannel(Guid channelGuid, ChannelMode mode, int channelCount) 
     private void CloseSendingDataChannel()
         => SetDataFileAndAccessor(SendingIndex, null, null, null);
 
-    /// <summary>
-    /// Gets a value indicating whether the channel is open.
-    /// </summary>
+    /// <inheritdoc />
     public bool IsOpen => Mode == ChannelMode.Receive ? Array.TrueForAll(DataAccessors, accessor => accessor is not null) : SendingIndex >= 0;
 
-    /// <summary>
-    /// Gets a value indicating whether the specified channel is connected.
-    /// </summary>
-    /// <param name="index">The channel index.</param>
+    /// <inheritdoc />
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is not a valid index.</exception>
     public bool IsConnected(int index)
     {
@@ -153,18 +138,10 @@ public class MultiChannel(Guid channelGuid, ChannelMode mode, int channelCount) 
             : DataAccessors[index] is not null;
     }
 
-    /// <summary>
-    /// Gets the last error.
-    /// </summary>
+    /// <inheritdoc />
     public string LastError { get; private set; } = string.Empty;
 
-    /// <summary>
-    /// Reads data from the channel.
-    /// This method requires <see cref="Mode"/> to be <see cref="ChannelMode.Receive"/>.
-    /// </summary>
-    /// <param name="data">The data read upon return if successful.</param>
-    /// <param name="index">Index of the channel with data upon return.</param>
-    /// <returns><see langword="true"/> data has been read; otherwise, <see langword="false"/>.</returns>
+    /// <inheritdoc />
     /// <exception cref="InvalidOperationException">The channel is not open.</exception>
     public bool TryRead(out byte[] data, out int index)
     {
@@ -194,10 +171,7 @@ public class MultiChannel(Guid channelGuid, ChannelMode mode, int channelCount) 
         return false;
     }
 
-    /// <summary>
-    /// Gets the number of free bytes in the channel.
-    /// This method requires <see cref="Mode"/> to be <see cref="ChannelMode.Send"/>.
-    /// </summary>
+    /// <inheritdoc />
     /// <exception cref="InvalidOperationException">The channel is not open.</exception>
     public int GetFreeLength()
     {
@@ -209,10 +183,7 @@ public class MultiChannel(Guid channelGuid, ChannelMode mode, int channelCount) 
         return CircularBufferHelper.GetFreeLength(Accessor, EffectiveCapacity);
     }
 
-    /// <summary>
-    /// Gets the number of free bytes in the specified channel.
-    /// </summary>
-    /// <param name="index">The channel index.</param>
+    /// <inheritdoc />
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is not a valid index.</exception>
     /// <exception cref="InvalidOperationException">The specified channel is not connected.</exception>
     public int GetFreeLength(int index)
@@ -225,10 +196,7 @@ public class MultiChannel(Guid channelGuid, ChannelMode mode, int channelCount) 
         return CircularBufferHelper.GetFreeLength(Accessor, EffectiveCapacity);
     }
 
-    /// <summary>
-    /// Gets the number of used bytes in the channel.
-    /// This method requires <see cref="Mode"/> to be <see cref="ChannelMode.Send"/>.
-    /// </summary>
+    /// <inheritdoc />
     /// <exception cref="InvalidOperationException">The channel is not open.</exception>
     public int GetUsedLength()
     {
@@ -240,10 +208,7 @@ public class MultiChannel(Guid channelGuid, ChannelMode mode, int channelCount) 
         return CircularBufferHelper.GetUsedLength(Accessor, EffectiveCapacity);
     }
 
-    /// <summary>
-    /// Gets the number of used bytes in the channel.
-    /// </summary>
-    /// <param name="index">The channel index.</param>
+    /// <inheritdoc />
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is not a valid index.</exception>
     /// <exception cref="InvalidOperationException">The specified channel is not connected.</exception>
     public int GetUsedLength(int index)
@@ -256,11 +221,7 @@ public class MultiChannel(Guid channelGuid, ChannelMode mode, int channelCount) 
         return CircularBufferHelper.GetUsedLength(Accessor, EffectiveCapacity);
     }
 
-    /// <summary>
-    /// Writes data to the channel.
-    /// This method requires <see cref="Mode"/> to be <see cref="ChannelMode.Send"/>.
-    /// </summary>
-    /// <param name="data">The data to write.</param>
+    /// <inheritdoc />
     /// <exception cref="InvalidOperationException">The channel is not open.</exception>
     public void Write(byte[] data)
     {
@@ -279,11 +240,8 @@ public class MultiChannel(Guid channelGuid, ChannelMode mode, int channelCount) 
         CircularBufferHelper.Write(Accessor, EffectiveCapacity, data);
     }
 
-    /// <summary>
-    /// Gets channel stats for debug purpose.
-    /// This method requires <see cref="Mode"/> to be <see cref="ChannelMode.Send"/>.
-    /// </summary>
-    /// <param name="channelName">The channel name.</param>
+    /// <inheritdoc />
+    /// <exception cref="ArgumentNullException"><paramref name="channelName"/> is <see langword="null"/>.</exception>
     /// <exception cref="InvalidOperationException">The channel is not open.</exception>
     public string GetStats(string channelName)
     {
@@ -302,11 +260,8 @@ public class MultiChannel(Guid channelGuid, ChannelMode mode, int channelCount) 
         return GetStats(channelName, Accessor);
     }
 
-    /// <summary>
-    /// Gets channel stats for debug purpose for the specified channel.
-    /// </summary>
-    /// <param name="channelName">The channel name.</param>
-    /// <param name="index">The channel index.</param>
+    /// <inheritdoc />
+    /// <exception cref="ArgumentNullException"><paramref name="channelName"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is not a valid index.</exception>
     /// <exception cref="InvalidOperationException">The channel is not connected.</exception>
     public string GetStats(string channelName, int index)
@@ -337,9 +292,7 @@ public class MultiChannel(Guid channelGuid, ChannelMode mode, int channelCount) 
         return $"{channelName} - Head:{Head} Tail:{Tail} Capacity:{EffectiveCapacity} Free:{FreeLength} Used:{UsedLength}";
     }
 
-    /// <summary>
-    /// Closes the chanel.
-    /// </summary>
+    /// <inheritdoc />
     public void Close()
     {
         if (!IsOpen)
