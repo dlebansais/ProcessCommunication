@@ -1,21 +1,21 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFrameworks>netstandard2.0;netstandard2.1;netcoreapp3.1;net481;net8.0-windows7.0;net9.0-windows7.0</TargetFrameworks>
-        <LangVersion>13</LangVersion>
+        <TargetFrameworks>netstandard2.0;netstandard2.1;netcoreapp3.1;net481;net8.0-windows7.0;net10.0-windows7.0</TargetFrameworks>
+        <LangVersion>14</LangVersion>
         <Nullable>enable</Nullable>
         <Platforms>x64</Platforms>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         
         <RootNamespace>ProcessCommunication</RootNamespace>
-        <Version>3.0.6</Version>
+        <Version>3.0.7</Version>
         <Authors>David Le Bansais</Authors>
         <Company />
         <Product />
         <Description>A library to communicate between processes</Description>
         <Copyright>Copyright © 2026 David Le Bansais</Copyright>
-        <AssemblyVersion>3.0.6.15</AssemblyVersion>
-        <FileVersion>3.0.6.15</FileVersion>
+        <AssemblyVersion>3.0.7.16</AssemblyVersion>
+        <FileVersion>3.0.7.16</FileVersion>
         <RepositoryUrl>https://github.com/dlebansais/ProcessCommunication</RepositoryUrl>
         <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
 
@@ -66,7 +66,7 @@
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="dlebansais.Method.Contracts.Analyzers-Debug" Version="2.0.6" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+        <PackageReference Include="dlebansais.Method.Contracts.Analyzers-Debug" Version="2.0.10" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
@@ -74,7 +74,7 @@
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="PolySharp" Version="1.15.0">
+        <PackageReference Include="PolySharp" Version="1.16.0">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
@@ -82,7 +82,7 @@
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
 
-        <PackageReference Include="dlebansais.Method.Contracts-Debug" Version="2.0.5" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" />
+        <PackageReference Include="dlebansais.Method.Contracts-Debug" Version="2.0.7" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" />
         <PackageReference Include="dlebansais.Method.Contracts" Version="2.0.7" Condition="'$(Configuration)|$(Platform)'!='Debug|x64'" />
     </ItemGroup>
 
