@@ -1,0 +1,14 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+  </Configurations>
+  <Project Path="ProcessCommunication/ProcessCommunication.csproj">
+    <Platform Project="x64" />
+  </Project>
+  <Project Path="Test/ProcessCommunication.Test/ProcessCommunication.Test.csproj">
+    <Platform Project="x64" />
+  </Project>
+  <Project Path="Test/TestProcess/TestProcess.csproj">
+    <Platform Project="x64" />
+  </Project>
+</Solution>
