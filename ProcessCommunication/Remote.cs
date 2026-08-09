@@ -3,7 +3,6 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Reflection;
 using System.Threading.Tasks;
 using Contracts;
 
@@ -18,7 +17,7 @@ public static class Remote
     /// <param name="fileName">The file name.</param>
     public static string GetSiblingFullPath(string fileName)
     {
-        string Folder = Contract.AssertNotNull(Path.GetDirectoryName(Assembly.GetCallingAssembly().Location));
+        string Folder = Contract.AssertNotNull(AppContext.BaseDirectory);
         string FullPath = Path.Combine(Folder, fileName);
 
         return FullPath;
