@@ -5,6 +5,9 @@
   <Project Path="ProcessCommunication/ProcessCommunication.csproj">
     <Platform Project="x64" />
   </Project>
+  <Project Path="Test/ProcessCommunication.Test.DotNetFramework/ProcessCommunication.Test.DotNetFramework.csproj">
+    <Platform Project="x64" />
+  </Project>
   <Project Path="Test/ProcessCommunication.Test/ProcessCommunication.Test.csproj">
     <Platform Project="x64" />
   </Project>
