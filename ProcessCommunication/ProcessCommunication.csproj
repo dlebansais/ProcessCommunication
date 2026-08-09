@@ -8,14 +8,14 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         
         <RootNamespace>ProcessCommunication</RootNamespace>
-        <Version>3.0.7</Version>
+        <Version>4.0.0</Version>
         <Authors>David Le Bansais</Authors>
         <Company />
         <Product />
         <Description>A library to communicate between processes</Description>
         <Copyright>Copyright © 2026 David Le Bansais</Copyright>
-        <AssemblyVersion>3.0.7.16</AssemblyVersion>
-        <FileVersion>3.0.7.16</FileVersion>
+        <AssemblyVersion>4.0.0.17</AssemblyVersion>
+        <FileVersion>4.0.0.17</FileVersion>
         <RepositoryUrl>https://github.com/dlebansais/ProcessCommunication</RepositoryUrl>
         <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
 
